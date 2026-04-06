@@ -1,0 +1,46 @@
+name: napari-roi-tracker
+display_name: Napari ROI Tracker
+schema_version: 0.2.1
+contributions:
+  commands:
+    - id: napari-roi-tracker.make_run_widget
+      python_name: napari_roi_tracker._dock:make_run_widget
+      title: ROI Tracker: 解析実行
+    - id: napari-roi-tracker.make_save_widget
+      python_name: napari_roi_tracker._dock:make_save_widget
+      title: ROI Tracker: 結果を保存
+    - id: napari-roi-tracker.make_raw_plot_widget
+      python_name: napari_roi_tracker._dock:make_raw_plot_widget
+      title: ROI Tracker: Raw グラフ
+    - id: napari-roi-tracker.make_double_plot_widget
+      python_name: napari_roi_tracker._dock:make_double_plot_widget
+      title: ROI Tracker: Double Norm グラフ
+    - id: napari-roi-tracker.make_full_scale_plot_widget
+      python_name: napari_roi_tracker._dock:make_full_scale_plot_widget
+      title: ROI Tracker: Full Scale グラフ
+    - id: napari-roi-tracker.make_difference_widget
+      python_name: napari_roi_tracker._dock:make_difference_widget
+      title: ROI Tracker: 差分グラフ作成
+    - id: napari-roi-tracker.make_save_session_widget
+      python_name: napari_roi_tracker._dock:make_save_session_widget
+      title: ROI Tracker: 完全復元セッション保存
+    - id: napari-roi-tracker.make_load_session_widget
+      python_name: napari_roi_tracker._dock:make_load_session_widget
+      title: ROI Tracker: 完全復元セッション読込
+  widgets:
+    - command: napari-roi-tracker.make_run_widget
+      display_name: ROI Tracker: 解析実行
+    - command: napari-roi-tracker.make_save_widget
+      display_name: ROI Tracker: 結果を保存
+    - command: napari-roi-tracker.make_raw_plot_widget
+      display_name: ROI Tracker: Raw グラフ
+    - command: napari-roi-tracker.make_double_plot_widget
+      display_name: ROI Tracker: Double Norm グラフ
+    - command: napari-roi-tracker.make_full_scale_plot_widget
+      display_name: ROI Tracker: Full Scale グラフ
+    - command: napari-roi-tracker.make_difference_widget
+      display_name: ROI Tracker: 差分グラフ作成
+    - command: napari-roi-tracker.make_save_session_widget
+      display_name: ROI Tracker: 完全復元セッション保存
+    - command: napari-roi-tracker.make_load_session_widget
+      display_name: ROI Tracker: 完全復元セッション読込
