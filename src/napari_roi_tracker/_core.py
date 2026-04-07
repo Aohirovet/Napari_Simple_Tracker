@@ -14,12 +14,12 @@ def get_frame_2d_from_image(image: np.ndarray, t_index: int) -> np.ndarray:
         return image[t_index, 0, :, :]
     if image.ndim == 3:
         return image[t_index, :, :]
-    raise ValueError(f"未対応の画像次元です: ndim={image.ndim}")
+    raise ValueError(f"Unsupported image ndim: {image.ndim}. Expected TZYX/TYX style time-series image.")
 
 
 def extract_tyx_from_points(pts: np.ndarray, image_ndim: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if pts.ndim != 2 or pts.shape[0] == 0:
-        raise ValueError("Pointsデータが不正です。")
+        raise ValueError("Points data is empty or malformed.")
 
     if pts.shape[1] >= 5 and image_ndim >= 5:
         t_ax, y_ax, x_ax = 0, 3, 4
@@ -28,7 +28,7 @@ def extract_tyx_from_points(pts: np.ndarray, image_ndim: int) -> tuple[np.ndarra
     elif pts.shape[1] >= 3:
         t_ax, y_ax, x_ax = 0, 1, 2
     else:
-        raise ValueError("Pointsレイヤーの次元が不足しています。")
+        raise ValueError("Points layer has insufficient dimensions for time-series tracking.")
 
     frames = pts[:, t_ax].astype(int)
     ys = pts[:, y_ax].astype(float)
@@ -45,18 +45,18 @@ def interpolate_track(frames: np.ndarray, ys: np.ndarray, xs: np.ndarray) -> tup
     ys_interp: list[np.ndarray] = []
     xs_interp: list[np.ndarray] = []
     for f0, f1, y0, y1, x0, x1 in zip(frames[:-1], frames[1:], ys[:-1], ys[1:], xs[:-1], xs[1:]):
-        n = max(f1 - f0, 1)
+        n = max(int(f1 - f0), 1)
         ys_interp.append(np.linspace(y0, y1, n, endpoint=False))
         xs_interp.append(np.linspace(x0, x1, n, endpoint=False))
 
     ys_interp.append(np.array([ys[-1]]))
     xs_interp.append(np.array([xs[-1]]))
 
-    return np.arange(frames[0], frames[-1] + 1), np.concatenate(ys_interp), np.concatenate(xs_interp)
+    return np.arange(int(frames[0]), int(frames[-1]) + 1), np.concatenate(ys_interp), np.concatenate(xs_interp)
 
 
 def measure_roi_mean(frame2d: np.ndarray, y: float, x: float, radius: int) -> float:
-    rr, cc = disk((int(round(y)), int(round(x))), radius, shape=frame2d.shape)
+    rr, cc = disk((int(round(y)), int(round(x))), int(radius), shape=frame2d.shape)
     roi = frame2d[rr, cc]
     return float(np.nanmean(roi))
 
@@ -69,15 +69,9 @@ def compute_double_and_full_scale(df_track: pd.DataFrame, bleach_frame: int) -> 
 
     track_id = df_track["track_id"].iloc[0]
     if pre_mask.sum() == 0:
-        raise ValueError(
-            f"track_id={track_id} に pre-bleach frame がありません。"
-            f" bleach_frame を小さくしすぎていないか確認してください。"
-        )
+        raise ValueError(f"track_id={track_id} has no pre-bleach frames. Check bleach_frame.")
     if post_mask.sum() == 0:
-        raise ValueError(
-            f"track_id={track_id} に post-bleach frame がありません。"
-            f" bleach_frame を大きくしすぎていないか確認してください。"
-        )
+        raise ValueError(f"track_id={track_id} has no post-bleach frames. Check bleach_frame.")
 
     roi1_pre = float(np.nanmean(df_track.loc[pre_mask, "main_bg_corrected"]))
     roi2_pre = float(np.nanmean(df_track.loc[pre_mask, "ref_bg_corrected"]))
@@ -106,6 +100,100 @@ def infer_reference_layer_name(main_layer_name: str, reference_prefix: str = "Re
     return f"{reference_prefix}{main_layer_name}"
 
 
+def _collect_points_layers(viewer: Any) -> list[Any]:
+    return [l for l in viewer.layers if getattr(l, "_type_string", "") == "points"]
+
+
+def _collect_image_layer_names(viewer: Any) -> list[str]:
+    return [l.name for l in viewer.layers if getattr(l, "_type_string", "") == "image"]
+
+
+def _build_mask_layer(viewer: Any, frame0: np.ndarray, name: str, color: str) -> Any:
+    remove_layer_if_exists(viewer, name)
+    return viewer.add_image(
+        np.zeros_like(frame0, dtype=np.uint8),
+        name=name,
+        blending="additive",
+        colormap=color,
+        opacity=0.6,
+        visible=True,
+    )
+
+
+def run_simple_tracker_core(
+    viewer: Any,
+    image_layer_name: str,
+    roi_radius: int,
+    exclude_prefix: str = "Ref_",
+    exclude_layer_name: str = "",
+) -> tuple[pd.DataFrame, dict[str, Any], list[dict[str, Any]], list[tuple[Any, Any, Any, Any, int]]]:
+    if image_layer_name not in _collect_image_layer_names(viewer):
+        raise ValueError(f"Image layer '{image_layer_name}' was not found.")
+
+    img_layer = viewer.layers[image_layer_name]
+    image = np.asarray(img_layer.data)
+    all_point_layers = _collect_points_layers(viewer)
+    point_layers_main = [
+        l for l in all_point_layers
+        if l.name != exclude_layer_name and not l.name.startswith(exclude_prefix)
+    ]
+    if not point_layers_main:
+        raise ValueError("No points layers were found for simple tracking.")
+
+    result_dfs: list[pd.DataFrame] = []
+    roi_tracks: list[tuple[Any, Any, Any, Any, int]] = []
+    track_sources: list[dict[str, Any]] = []
+    frame0 = get_frame_2d_from_image(image, 0)
+
+    for i, layer in enumerate(point_layers_main, start=1):
+        pts = np.asarray(layer.data)
+        frames, ys, xs = extract_tyx_from_points(pts, image.ndim)
+        if len(frames) < 2:
+            raise ValueError(f"Points layer '{layer.name}' needs at least two points.")
+        t_range, ys_interp, xs_interp = interpolate_track(frames, ys, xs)
+        if t_range is None or ys_interp is None or xs_interp is None:
+            raise ValueError(f"Interpolation failed for points layer '{layer.name}'.")
+
+        intensities = []
+        for tt, y, x in zip(t_range, ys_interp, xs_interp):
+            frame2d = get_frame_2d_from_image(image, int(tt))
+            intensities.append(measure_roi_mean(frame2d, float(y), float(x), roi_radius))
+
+        df = pd.DataFrame({
+            "track_id": i,
+            "track_name": layer.name,
+            "frame": t_range,
+            "y": ys_interp,
+            "x": xs_interp,
+            "raw_intensity": intensities,
+        })
+        result_dfs.append(df)
+
+        mask_layer = _build_mask_layer(viewer, frame0, f"TRACK_mask_{layer.name}", "cyan")
+        roi_tracks.append((mask_layer, t_range, ys_interp, xs_interp, roi_radius))
+
+        track_sources.append({
+            "track_id": i,
+            "layer_name": layer.name,
+            "points_data": pts.tolist(),
+            "frames": frames.tolist(),
+            "ys": ys.tolist(),
+            "xs": xs.tolist(),
+            "t_range": t_range.tolist(),
+            "ys_interp": ys_interp.tolist(),
+            "xs_interp": xs_interp.tolist(),
+        })
+
+    result = pd.concat(result_dfs, ignore_index=True)
+    meta = {
+        "mode": "simple_tracker",
+        "image_layer": image_layer_name,
+        "roi_radius": int(roi_radius),
+        "track_layers": [ts["layer_name"] for ts in track_sources],
+    }
+    return result, meta, track_sources, roi_tracks
+
+
 def run_analysis_core(
     viewer: Any,
     image_layer_name: str,
@@ -116,17 +204,17 @@ def run_analysis_core(
     reference_prefix: str = "Ref_",
     bleach_frame: int = 5,
 ) -> tuple[pd.DataFrame, dict[str, Any], list[dict[str, Any]], dict[str, Any] | None, list[tuple[Any, Any, Any, Any, int]], tuple[Any, Any, Any, Any, int] | None]:
-    if image_layer_name not in [l.name for l in viewer.layers]:
-        raise ValueError(f"画像レイヤー '{image_layer_name}' が見つかりません。")
+    if image_layer_name not in _collect_image_layer_names(viewer):
+        raise ValueError(f"Image layer '{image_layer_name}' was not found.")
 
     img_layer = viewer.layers[image_layer_name]
     image = np.asarray(img_layer.data)
     bg_layer_name = bg_points_layer_name.strip() if bg_points_layer_name else ""
 
-    all_point_layers = [l for l in viewer.layers if getattr(l, "_type_string", "") == "points"]
+    all_point_layers = _collect_points_layers(viewer)
     point_layers_main = [l for l in all_point_layers if l.name != bg_layer_name and not l.name.startswith(reference_prefix)]
     if not point_layers_main:
-        raise ValueError("解析対象の main Pointsレイヤーが見つかりません。")
+        raise ValueError("No main points layers were found for FRAP analysis.")
 
     all_dfs: list[pd.DataFrame] = []
     roi_tracks: list[tuple[Any, Any, Any, Any, int]] = []
@@ -137,14 +225,15 @@ def run_analysis_core(
 
     if bg_layer_name:
         if bg_layer_name not in [l.name for l in viewer.layers]:
-            raise ValueError(f"Background Pointsレイヤー '{bg_layer_name}' が見つかりません。")
+            raise ValueError(f"Background points layer '{bg_layer_name}' was not found.")
         bg_layer = viewer.layers[bg_layer_name]
         bg_pts = np.asarray(bg_layer.data)
         bg_frames, bg_ys, bg_xs = extract_tyx_from_points(bg_pts, image.ndim)
         if len(bg_frames) < 2:
-            raise ValueError("Background Pointsは少なくとも2点必要です。")
+            raise ValueError("Background points layer needs at least two points.")
         bg_t_range, bg_ys_interp, bg_xs_interp = interpolate_track(bg_frames, bg_ys, bg_xs)
-        assert bg_t_range is not None and bg_ys_interp is not None and bg_xs_interp is not None
+        if bg_t_range is None or bg_ys_interp is None or bg_xs_interp is None:
+            raise ValueError("Background interpolation failed.")
 
         bg_intensities = []
         for tt, y, x in zip(bg_t_range, bg_ys_interp, bg_xs_interp):
@@ -158,17 +247,8 @@ def run_analysis_core(
             "bg_intensity": bg_intensities,
         })
 
-        bg_mask_name = f"BG_mask_{bg_layer.name}"
-        remove_layer_if_exists(viewer, bg_mask_name)
         frame0 = get_frame_2d_from_image(image, 0)
-        bg_mask_layer = viewer.add_image(
-            np.zeros_like(frame0, dtype=np.uint8),
-            name=bg_mask_name,
-            blending="additive",
-            colormap="magenta",
-            opacity=0.6,
-            visible=True,
-        )
+        bg_mask_layer = _build_mask_layer(viewer, frame0, f"BG_mask_{bg_layer.name}", "magenta")
         bg_track = (bg_mask_layer, bg_t_range, bg_ys_interp, bg_xs_interp, bg_radius)
         bg_source = {
             "layer_name": bg_layer.name,
@@ -185,7 +265,7 @@ def run_analysis_core(
     for i, main_layer in enumerate(point_layers_main, start=1):
         ref_layer_name = infer_reference_layer_name(main_layer.name, reference_prefix=reference_prefix)
         if ref_layer_name not in [l.name for l in viewer.layers]:
-            raise ValueError(f"main ROI '{main_layer.name}' に対応する reference ROI '{ref_layer_name}' が見つかりません。")
+            raise ValueError(f"Reference layer '{ref_layer_name}' for main ROI '{main_layer.name}' was not found.")
         ref_layer = viewer.layers[ref_layer_name]
 
         main_pts = np.asarray(main_layer.data)
@@ -193,20 +273,19 @@ def run_analysis_core(
         main_frames, main_ys, main_xs = extract_tyx_from_points(main_pts, image.ndim)
         ref_frames, ref_ys, ref_xs = extract_tyx_from_points(ref_pts, image.ndim)
         if len(main_frames) < 2:
-            raise ValueError(f"main ROI '{main_layer.name}' は少なくとも2点必要です。")
+            raise ValueError(f"Main ROI '{main_layer.name}' needs at least two points.")
         if len(ref_frames) < 2:
-            raise ValueError(f"reference ROI '{ref_layer_name}' は少なくとも2点必要です。")
+            raise ValueError(f"Reference ROI '{ref_layer_name}' needs at least two points.")
 
         main_t_range, main_ys_interp, main_xs_interp = interpolate_track(main_frames, main_ys, main_xs)
         ref_t_range, ref_ys_interp, ref_xs_interp = interpolate_track(ref_frames, ref_ys, ref_xs)
-        assert main_t_range is not None and main_ys_interp is not None and main_xs_interp is not None
-        assert ref_t_range is not None and ref_ys_interp is not None and ref_xs_interp is not None
-
+        if any(v is None for v in (main_t_range, main_ys_interp, main_xs_interp, ref_t_range, ref_ys_interp, ref_xs_interp)):
+            raise ValueError(f"Interpolation failed for '{main_layer.name}' or '{ref_layer_name}'.")
         common_frames = np.intersect1d(main_t_range, ref_t_range)
         if bg_df is not None:
             common_frames = np.intersect1d(common_frames, bg_df["frame"].to_numpy())
         if len(common_frames) == 0:
-            raise ValueError(f"'{main_layer.name}' と '{ref_layer_name}' の共通frameがありません。")
+            raise ValueError(f"No common frames between '{main_layer.name}' and '{ref_layer_name}'.")
 
         main_raw, main_y_common, main_x_common = [], [], []
         for tt in common_frames:
@@ -244,28 +323,10 @@ def run_analysis_core(
         df = compute_double_and_full_scale(df, bleach_frame=bleach_frame)
         all_dfs.append(df)
 
-        main_mask_layer_name = f"ROI_mask_{main_layer.name}"
-        remove_layer_if_exists(viewer, main_mask_layer_name)
-        main_mask_layer = viewer.add_image(
-            np.zeros_like(frame0, dtype=np.uint8),
-            name=main_mask_layer_name,
-            blending="additive",
-            colormap="cyan",
-            opacity=0.6,
-            visible=True,
-        )
+        main_mask_layer = _build_mask_layer(viewer, frame0, f"ROI_mask_{main_layer.name}", "cyan")
         roi_tracks.append((main_mask_layer, common_frames, np.array(main_y_common), np.array(main_x_common), main_radius))
 
-        ref_mask_layer_name = f"REF_mask_{ref_layer.name}"
-        remove_layer_if_exists(viewer, ref_mask_layer_name)
-        ref_mask_layer = viewer.add_image(
-            np.zeros_like(frame0, dtype=np.uint8),
-            name=ref_mask_layer_name,
-            blending="additive",
-            colormap="yellow",
-            opacity=0.6,
-            visible=True,
-        )
+        ref_mask_layer = _build_mask_layer(viewer, frame0, f"REF_mask_{ref_layer.name}", "yellow")
         roi_tracks.append((ref_mask_layer, common_frames, np.array(ref_y_common), np.array(ref_x_common), ref_radius))
 
         track_sources.append({
@@ -294,10 +355,11 @@ def run_analysis_core(
         })
 
     if not all_dfs:
-        raise ValueError("有効なトラックが見つかりませんでした。")
+        raise ValueError("No valid FRAP tracks were produced.")
 
     result = pd.concat(all_dfs, ignore_index=True)
     meta = {
+        "mode": "frap_analysis",
         "image_layer": image_layer_name,
         "main_radius": int(main_radius),
         "ref_radius": int(ref_radius),

@@ -4,59 +4,24 @@ schema_version: 0.2.1
 
 contributions:
   commands:
-    - id: napari-roi-tracker.make_run_widget
-      python_name: napari_roi_tracker._dock:make_run_widget
-      title: "ROI Tracker: Run Analysis"
+    - id: napari-roi-tracker.make_simple_tracker_widget
+      python_name: napari_roi_tracker._dock:make_simple_tracker_widget
+      title: "Simple Tracker"
 
-    - id: napari-roi-tracker.make_save_widget
-      python_name: napari_roi_tracker._dock:make_save_widget
-      title: "ROI Tracker: Save Results"
+    - id: napari-roi-tracker.make_frap_analysis_widget
+      python_name: napari_roi_tracker._dock:make_frap_analysis_widget
+      title: "FRAP Analysis"
 
-    - id: napari-roi-tracker.make_raw_plot_widget
-      python_name: napari_roi_tracker._dock:make_raw_plot_widget
-      title: "ROI Tracker: Raw Plot"
-
-    - id: napari-roi-tracker.make_double_plot_widget
-      python_name: napari_roi_tracker._dock:make_double_plot_widget
-      title: "ROI Tracker: Double-Normalized Plot"
-
-    - id: napari-roi-tracker.make_full_scale_plot_widget
-      python_name: napari_roi_tracker._dock:make_full_scale_plot_widget
-      title: "ROI Tracker: Full-Scale Plot"
-
-    - id: napari-roi-tracker.make_difference_widget
-      python_name: napari_roi_tracker._dock:make_difference_widget
-      title: "ROI Tracker: Difference Plot"
-
-    - id: napari-roi-tracker.make_save_session_widget
-      python_name: napari_roi_tracker._dock:make_save_session_widget
-      title: "ROI Tracker: Save Session"
-
-    - id: napari-roi-tracker.make_load_session_widget
-      python_name: napari_roi_tracker._dock:make_load_session_widget
-      title: "ROI Tracker: Load Session"
+    - id: napari-roi-tracker.make_session_widget
+      python_name: napari_roi_tracker._dock:make_session_widget
+      title: "Load Session"
 
   widgets:
-    - command: napari-roi-tracker.make_run_widget
-      display_name: "ROI Tracker: Run Analysis"
+    - command: napari-roi-tracker.make_simple_tracker_widget
+      display_name: "Simple Tracker"
 
-    - command: napari-roi-tracker.make_save_widget
-      display_name: "ROI Tracker: Save Results"
+    - command: napari-roi-tracker.make_frap_analysis_widget
+      display_name: "FRAP Analysis"
 
-    - command: napari-roi-tracker.make_raw_plot_widget
-      display_name: "ROI Tracker: Raw Plot"
-
-    - command: napari-roi-tracker.make_double_plot_widget
-      display_name: "ROI Tracker: Double-Normalized Plot"
-
-    - command: napari-roi-tracker.make_full_scale_plot_widget
-      display_name: "ROI Tracker: Full-Scale Plot"
-
-    - command: napari-roi-tracker.make_difference_widget
-      display_name: "ROI Tracker: Difference Plot"
-
-    - command: napari-roi-tracker.make_save_session_widget
-      display_name: "ROI Tracker: Save Session"
-
-    - command: napari-roi-tracker.make_load_session_widget
-      display_name: "ROI Tracker: Load Session"
+    - command: napari-roi-tracker.make_session_widget
+      display_name: "Load Session"

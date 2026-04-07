@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import napari
+
 from ._widgets import RoiTrackerPlugin
 
 PLUGIN_INSTANCE_ATTRIBUTE = "_roi_tracker_plugin_instance"
@@ -21,41 +22,16 @@ def _get_plugin(viewer) -> RoiTrackerPlugin:
     return plugin
 
 
-def make_run_widget():
+def make_simple_tracker_widget():
     viewer = _get_current_viewer()
-    return _get_plugin(viewer).run_multi_roi_analysis
+    return _get_plugin(viewer).simple_tracker_widget
 
 
-def make_save_widget():
+def make_frap_analysis_widget():
     viewer = _get_current_viewer()
-    return _get_plugin(viewer).save_results
+    return _get_plugin(viewer).frap_analysis_widget
 
 
-def make_raw_plot_widget():
+def make_session_widget():
     viewer = _get_current_viewer()
-    return _get_plugin(viewer).plot_raw_main
-
-
-def make_double_plot_widget():
-    viewer = _get_current_viewer()
-    return _get_plugin(viewer).plot_double_norm
-
-
-def make_full_scale_plot_widget():
-    viewer = _get_current_viewer()
-    return _get_plugin(viewer).plot_full_scale
-
-
-def make_difference_widget():
-    viewer = _get_current_viewer()
-    return _get_plugin(viewer).make_difference_plot
-
-
-def make_save_session_widget():
-    viewer = _get_current_viewer()
-    return _get_plugin(viewer).save_complete_session
-
-
-def make_load_session_widget():
-    viewer = _get_current_viewer()
-    return _get_plugin(viewer).load_complete_session
+    return _get_plugin(viewer).session_widget
