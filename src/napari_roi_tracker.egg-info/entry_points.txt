@@ -1,2 +1,0 @@
-[napari.manifest]
-napari-roi-tracker = napari_roi_tracker:napari.yaml
