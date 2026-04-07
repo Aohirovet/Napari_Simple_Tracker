@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from napari.layers import Image, Points
 from skimage.draw import disk
 
 
@@ -101,11 +102,11 @@ def infer_reference_layer_name(main_layer_name: str, reference_prefix: str = "Re
 
 
 def _collect_points_layers(viewer: Any) -> list[Any]:
-    return [l for l in viewer.layers if getattr(l, "_type_string", "") == "points"]
+    return [layer for layer in viewer.layers if isinstance(layer, Points)]
 
 
 def _collect_image_layer_names(viewer: Any) -> list[str]:
-    return [l.name for l in viewer.layers if getattr(l, "_type_string", "") == "image"]
+    return [layer.name for layer in viewer.layers if isinstance(layer, Image)]
 
 
 def _build_mask_layer(viewer: Any, frame0: np.ndarray, name: str, color: str) -> Any:

@@ -4,3 +4,25 @@ AGENTS.md
 __pycache__/
 *.py[cod]
 *.egg-info/
+
+# IDE / editor settings
+.idea/
+.vscode/
+
+# Python tooling caches
+.cache/
+.matplotlib/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environment files
+.env
+.env.*
+
+# Build artifacts
+build/
+dist/
+
+# Local runtime/cache directories created during GUI tests
+Library/

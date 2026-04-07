@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from magicgui import magicgui
 from magicgui.widgets import Container
+from napari.layers import Image, Points
 from qtpy.QtWidgets import QFileDialog, QMessageBox
 from skimage.draw import disk
 
@@ -34,10 +35,10 @@ class RoiTrackerPlugin:
         self._refresh_and_reconnect()
 
     def _get_image_layer_choices(self, widget: Any | None = None) -> list[str]:
-        return [l.name for l in self.viewer.layers if getattr(l, "_type_string", "") == "image"]
+        return [layer.name for layer in self.viewer.layers if isinstance(layer, Image)]
 
     def _get_points_layer_choices(self, widget: Any | None = None) -> list[str]:
-        return [""] + [l.name for l in self.viewer.layers if getattr(l, "_type_string", "") == "points"]
+        return [""] + [layer.name for layer in self.viewer.layers if isinstance(layer, Points)]
 
     def _refresh_widget_choices(self, event: Any | None = None) -> None:
         image_choices = self._get_image_layer_choices()
@@ -66,7 +67,7 @@ class RoiTrackerPlugin:
 
     def _connect_layer_name_events(self) -> None:
         for layer in self.viewer.layers:
-            if getattr(layer, "_type_string", "") in {"image", "points"}:
+            if isinstance(layer, (Image, Points)):
                 try:
                     layer.events.name.disconnect(self._refresh_widget_choices)
                 except Exception:
