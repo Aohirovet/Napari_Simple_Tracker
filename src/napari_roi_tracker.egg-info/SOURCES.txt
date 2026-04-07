@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+src/napari_roi_tracker/__init__.py
+src/napari_roi_tracker/_core.py
+src/napari_roi_tracker/_dock.py
+src/napari_roi_tracker/_state.py
+src/napari_roi_tracker/_widgets.py
+src/napari_roi_tracker/napari.yaml
+src/napari_roi_tracker.egg-info/PKG-INFO
+src/napari_roi_tracker.egg-info/SOURCES.txt
+src/napari_roi_tracker.egg-info/dependency_links.txt
+src/napari_roi_tracker.egg-info/entry_points.txt
+src/napari_roi_tracker.egg-info/requires.txt
+src/napari_roi_tracker.egg-info/top_level.txt

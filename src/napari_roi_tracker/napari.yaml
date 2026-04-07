@@ -1,46 +1,62 @@
 name: napari-roi-tracker
-display_name: Napari ROI Tracker
+display_name: "Napari ROI Tracker"
 schema_version: 0.2.1
+
 contributions:
   commands:
     - id: napari-roi-tracker.make_run_widget
       python_name: napari_roi_tracker._dock:make_run_widget
-      title: ROI Tracker: 解析実行
+      title: "ROI Tracker: Run Analysis"
+
     - id: napari-roi-tracker.make_save_widget
       python_name: napari_roi_tracker._dock:make_save_widget
-      title: ROI Tracker: 結果を保存
+      title: "ROI Tracker: Save Results"
+
     - id: napari-roi-tracker.make_raw_plot_widget
       python_name: napari_roi_tracker._dock:make_raw_plot_widget
-      title: ROI Tracker: Raw グラフ
+      title: "ROI Tracker: Raw Plot"
+
     - id: napari-roi-tracker.make_double_plot_widget
       python_name: napari_roi_tracker._dock:make_double_plot_widget
-      title: ROI Tracker: Double Norm グラフ
+      title: "ROI Tracker: Double-Normalized Plot"
+
     - id: napari-roi-tracker.make_full_scale_plot_widget
       python_name: napari_roi_tracker._dock:make_full_scale_plot_widget
-      title: ROI Tracker: Full Scale グラフ
+      title: "ROI Tracker: Full-Scale Plot"
+
     - id: napari-roi-tracker.make_difference_widget
       python_name: napari_roi_tracker._dock:make_difference_widget
-      title: ROI Tracker: 差分グラフ作成
+      title: "ROI Tracker: Difference Plot"
+
     - id: napari-roi-tracker.make_save_session_widget
       python_name: napari_roi_tracker._dock:make_save_session_widget
-      title: ROI Tracker: 完全復元セッション保存
+      title: "ROI Tracker: Save Session"
+
     - id: napari-roi-tracker.make_load_session_widget
       python_name: napari_roi_tracker._dock:make_load_session_widget
-      title: ROI Tracker: 完全復元セッション読込
+      title: "ROI Tracker: Load Session"
+
   widgets:
     - command: napari-roi-tracker.make_run_widget
-      display_name: ROI Tracker: 解析実行
+      display_name: "ROI Tracker: Run Analysis"
+
     - command: napari-roi-tracker.make_save_widget
-      display_name: ROI Tracker: 結果を保存
+      display_name: "ROI Tracker: Save Results"
+
     - command: napari-roi-tracker.make_raw_plot_widget
-      display_name: ROI Tracker: Raw グラフ
+      display_name: "ROI Tracker: Raw Plot"
+
     - command: napari-roi-tracker.make_double_plot_widget
-      display_name: ROI Tracker: Double Norm グラフ
+      display_name: "ROI Tracker: Double-Normalized Plot"
+
     - command: napari-roi-tracker.make_full_scale_plot_widget
-      display_name: ROI Tracker: Full Scale グラフ
+      display_name: "ROI Tracker: Full-Scale Plot"
+
     - command: napari-roi-tracker.make_difference_widget
-      display_name: ROI Tracker: 差分グラフ作成
+      display_name: "ROI Tracker: Difference Plot"
+
     - command: napari-roi-tracker.make_save_session_widget
-      display_name: ROI Tracker: 完全復元セッション保存
+      display_name: "ROI Tracker: Save Session"
+
     - command: napari-roi-tracker.make_load_session_widget
-      display_name: ROI Tracker: 完全復元セッション読込
+      display_name: "ROI Tracker: Load Session"

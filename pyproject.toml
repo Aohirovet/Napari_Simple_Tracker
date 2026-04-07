@@ -8,9 +8,9 @@ version = "0.1.0"
 description = "napari plugin for multi-track ROI FRAP analysis with double normalization"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = { text = "MIT" }
 authors = [
-  {name = "Hirota Aoyagi"}
+  { name = "Hirota Aoyagi" }
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -25,12 +25,12 @@ classifiers = [
 dependencies = [
   "magicgui>=0.8",
   "matplotlib>=3.8",
-  "napari>=0.4.19",
   "numpy>=1.24",
   "pandas>=2.0",
   "qtpy>=2.4",
   "scikit-image>=0.22",
 ]
+
 
 [project.entry-points."napari.manifest"]
 napari-roi-tracker = "napari_roi_tracker:napari.yaml"
