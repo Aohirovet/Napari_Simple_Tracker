@@ -30,8 +30,3 @@ def make_simple_tracker_widget():
 def make_frap_analysis_widget():
     viewer = _get_current_viewer()
     return _get_plugin(viewer).frap_analysis_widget
-
-
-def make_session_widget():
-    viewer = _get_current_viewer()
-    return _get_plugin(viewer).session_widget

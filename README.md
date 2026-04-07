@@ -1,6 +1,6 @@
 # napari-roi-tracker
 
-napari 上で動く ROI tracking / FRAP analysis plugin です。現在は `npe2` plugin として、`Simple_Tracker`、`Simple_FRAP_analysis`、`Load Session` の 3 entrypoint を提供しています。
+napari 上で動く ROI tracking / FRAP analysis plugin です。現在は `npe2` plugin として、`Simple_Tracker` と `Simple_FRAP_analysis` の 2 entrypoint を提供しています。
 
 ## Plugin Entrypoints
 
@@ -8,15 +8,16 @@ napari 上で動く ROI tracking / FRAP analysis plugin です。現在は `npe2
   - ROI tracking
   - fluorescence intensity graph
   - CSV export
+  - session 保存
+  - session 読込
 - `Simple_FRAP_analysis`
   - main ROI / reference ROI / background ROI を使った FRAP 解析
   - background correction
   - double normalization
   - full scale normalization
   - CSV export
-- `Load Session`
-  - 保存済み session の復元
-  - plugin 上では session 保存も利用可能
+  - session 保存
+  - session 読込
 
 ## 主な機能
 
@@ -67,7 +68,8 @@ Plugins メニューから `Napari ROI Tracker` を開き、以下の widget を
 
 - `Simple_Tracker`
 - `Simple_FRAP_analysis`
-- `Load Session`
+
+`Save Session` と `Load Session` は `Simple_Tracker` と `Simple_FRAP_analysis` の各 widget 内にあります。
 
 ## 開発の進め方
 

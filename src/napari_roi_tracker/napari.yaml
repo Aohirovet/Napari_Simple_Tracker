@@ -12,16 +12,9 @@ contributions:
       python_name: napari_roi_tracker._dock:make_frap_analysis_widget
       title: "Simple_FRAP_analysis"
 
-    - id: napari-roi-tracker.make_session_widget
-      python_name: napari_roi_tracker._dock:make_session_widget
-      title: "Load Session"
-
   widgets:
     - command: napari-roi-tracker.make_simple_tracker_widget
       display_name: "Simple_Tracker"
 
     - command: napari-roi-tracker.make_frap_analysis_widget
       display_name: "Simple_FRAP_analysis"
-
-    - command: napari-roi-tracker.make_session_widget
-      display_name: "Load Session"

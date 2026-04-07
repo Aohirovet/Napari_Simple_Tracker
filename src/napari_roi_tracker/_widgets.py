@@ -29,7 +29,6 @@ class RoiTrackerPlugin:
 
         self.simple_tracker_widget = self._build_simple_tracker_system()
         self.frap_analysis_widget = self._build_frap_analysis_system()
-        self.session_widget = self._build_session_system()
 
         self._connect_layer_events()
         self._refresh_and_reconnect()
@@ -344,8 +343,19 @@ class RoiTrackerPlugin:
                 return
             self._save_result_csv()
 
+        @magicgui(call_button="Save Session")
+        def simple_save_session() -> None:
+            if SESSION_STATE.mode != "simple_tracker":
+                QMessageBox.warning(None, "Error", "Run Simple Tracker before saving the session.")
+                return
+            self._save_session_json()
+
+        @magicgui(call_button="Load Session")
+        def simple_load_session() -> None:
+            self._restore_session()
+
         self._simple_run = simple_run
-        return Container(widgets=[simple_run, simple_plot, simple_save_csv], labels=False)
+        return Container(widgets=[simple_run, simple_plot, simple_save_csv, simple_save_session, simple_load_session], labels=False)
 
     def _build_frap_analysis_system(self):
         @magicgui(
@@ -454,19 +464,19 @@ class RoiTrackerPlugin:
                 return
             self._save_result_csv()
 
-        self._frap_run = frap_run
-        return Container(
-            widgets=[frap_run, frap_plot_raw, frap_plot_double, frap_plot_full, frap_difference, frap_save_csv],
-            labels=False,
-        )
-
-    def _build_session_system(self):
         @magicgui(call_button="Save Session")
-        def save_session_widget() -> None:
+        def frap_save_session() -> None:
+            if SESSION_STATE.mode != "frap_analysis":
+                QMessageBox.warning(None, "Error", "Run FRAP Analysis before saving the session.")
+                return
             self._save_session_json()
 
         @magicgui(call_button="Load Session")
-        def load_session_widget() -> None:
+        def frap_load_session() -> None:
             self._restore_session()
 
-        return Container(widgets=[save_session_widget, load_session_widget], labels=False)
+        self._frap_run = frap_run
+        return Container(
+            widgets=[frap_run, frap_plot_raw, frap_plot_double, frap_plot_full, frap_difference, frap_save_csv, frap_save_session, frap_load_session],
+            labels=False,
+        )
