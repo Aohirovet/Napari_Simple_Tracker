@@ -3,12 +3,12 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "napari-roi-tracker"
+name = "Napari_Simple_Tracker"
 version = "0.1.0"
 description = "napari plugin for multi-track ROI FRAP analysis with double normalization"
 readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
+license = { text = "MIT" }
 authors = [
   { name = "Hirota Aoyagi" }
 ]
@@ -36,7 +36,7 @@ dependencies = [
 
 
 [project.entry-points."napari.manifest"]
-napari-roi-tracker = "napari_roi_tracker:napari.yaml"
+Napari_Simple_Tracker = "Napari_Simple_Tracker:napari.yaml"
 
 [project.urls]
 Homepage = "https://github.com/Aohirovet/Napari_Simple_Tracker"
@@ -52,4 +52,4 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-napari_roi_tracker = ["napari.yaml"]
+Napari_Simple_Tracker = ["napari.yaml"]

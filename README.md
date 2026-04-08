@@ -1,6 +1,6 @@
-# napari-roi-tracker
+# Napari_Simple_Tracker
 
-`napari-roi-tracker` is a lightweight and user-friendly napari plugin for ROI tracking and FRAP analysis in time-lapse image data.  
+`Napari_Simple_Tracker` is a lightweight and user-friendly napari plugin for ROI tracking and FRAP analysis in time-lapse image data.  
 It is designed to remain intentionally simple while providing the core functionality typically required for routine quantitative analysis.
 
 - Simple: point-based interaction with minimal configuration
@@ -34,11 +34,11 @@ It is designed to remain intentionally simple while providing the core functiona
 
 1. Launch napari.
 2. Open `Plugins -> Install/Uninstall Plugins...`.
-3. Search for `napari-roi-tracker` and install it.
+3. Search for `Napari_Simple_Tracker` and install it.
 
 This plugin assumes that `napari` is already installed in the environment where you use it.
 
-If you use `Install by name/URL`, enter the package name `napari-roi-tracker`.
+If you use `Install by name/URL`, enter the package name `Napari_Simple_Tracker`.
 
 ### Install from a cloned repository
 
@@ -67,7 +67,7 @@ Open image
 1. Load a time-series image in napari.
 2. Create one `Points` layer for each object to be tracked.
 3. Mark the object center across multiple frames.
-4. Open `Plugins -> Napari ROI Tracker -> Simple_Tracker`.
+4. Open `Plugins -> Napari Simple Tracker -> Simple_Tracker`.
 5. Press `Run Simple Tracker`.
 
 ### FRAP Analysis
@@ -76,7 +76,7 @@ Open image
 2. Create `Points` layers for the main ROI.
 3. Create one `Points` layer for the reference ROI.
 4. Optionally create one `Points` layer for the background ROI.
-5. Open `Plugins -> Napari ROI Tracker -> Simple_FRAP_analysis`.
+5. Open `Plugins -> Napari Simple Tracker -> Simple_FRAP_analysis`.
 6. Select the relevant layers and ROI radii, then press `Run FRAP Analysis`.
 
 ## Documentation

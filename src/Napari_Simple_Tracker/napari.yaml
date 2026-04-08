@@ -1,0 +1,20 @@
+name: Napari_Simple_Tracker
+display_name: "Napari Simple Tracker"
+schema_version: 0.2.1
+
+contributions:
+  commands:
+    - id: Napari_Simple_Tracker.make_simple_tracker_widget
+      python_name: Napari_Simple_Tracker._dock:make_simple_tracker_widget
+      title: "Simple_Tracker"
+
+    - id: Napari_Simple_Tracker.make_frap_analysis_widget
+      python_name: Napari_Simple_Tracker._dock:make_frap_analysis_widget
+      title: "Simple_FRAP_analysis"
+
+  widgets:
+    - command: Napari_Simple_Tracker.make_simple_tracker_widget
+      display_name: "Simple_Tracker"
+
+    - command: Napari_Simple_Tracker.make_frap_analysis_widget
+      display_name: "Simple_FRAP_analysis"
