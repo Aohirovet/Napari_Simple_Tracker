@@ -30,6 +30,12 @@ It is designed to remain intentionally simple while providing the core functiona
 - CSV export
 - Session save/load
 
+## Demo
+
+### `Simple_Tracker`
+
+![Simple Tracker demo](docs/demo/simple_tracker_demo.gif)
+
 ## Installation
 
 This package is published on PyPI as `napari-simple-tracker`.

@@ -26,6 +26,9 @@ build/
 dist/
 release_dist/
 
+# Local demo recordings
+*.mov
+
 # Local runtime/cache directories created during GUI tests
 Library/
 
