@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import weakref
+
 import napari
 
 from ._widgets import RoiTrackerPlugin
 
-PLUGIN_INSTANCE_ATTRIBUTE = "_roi_tracker_plugin_instance"
+_PLUGIN_INSTANCES: dict[int, tuple[weakref.ReferenceType[object], RoiTrackerPlugin]] = {}
 
 
 def _get_current_viewer():
@@ -15,10 +17,19 @@ def _get_current_viewer():
 
 
 def _get_plugin(viewer) -> RoiTrackerPlugin:
-    plugin = getattr(viewer, PLUGIN_INSTANCE_ATTRIBUTE, None)
-    if plugin is None:
-        plugin = RoiTrackerPlugin(viewer)
-        setattr(viewer, PLUGIN_INSTANCE_ATTRIBUTE, plugin)
+    viewer_id = id(viewer)
+    cached = _PLUGIN_INSTANCES.get(viewer_id)
+    if cached is not None:
+        cached_viewer_ref, plugin = cached
+        if cached_viewer_ref() is viewer:
+            return plugin
+
+    plugin = RoiTrackerPlugin(viewer)
+
+    def _cleanup(_ref) -> None:
+        _PLUGIN_INSTANCES.pop(viewer_id, None)
+
+    _PLUGIN_INSTANCES[viewer_id] = (weakref.ref(viewer, _cleanup), plugin)
     return plugin
 
 
