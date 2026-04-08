@@ -1,6 +1,6 @@
 # Napari_Simple_Tracker
 
-[![PyPI version](https://img.shields.io/pypi/v/napari-simple-tracker)](https://pypi.org/project/napari-simple-tracker/)
+[![PyPI version 1.1.1](https://img.shields.io/badge/PyPI-1.1.1-blue)](https://pypi.org/project/napari-simple-tracker/1.1.1/)
 
 `Napari_Simple_Tracker` is a lightweight and user-friendly napari plugin for ROI tracking and FRAP analysis in time-lapse image data.  
 It is designed to remain intentionally simple while providing the core functionality typically required for routine quantitative analysis.
@@ -46,9 +46,8 @@ python -m pip install napari-simple-tracker
 
 1. Launch napari.
 2. Open `Plugins -> Install/Uninstall Plugins...`.
-3. Search for `napari-simple-tracker` and install it.
-
-If you use `Install by name/URL`, enter the package name `napari-simple-tracker`.
+3. Use `Install by name/URL`.
+4. Enter the package name `napari-simple-tracker` and install it.
 
 ### Install from source
 
