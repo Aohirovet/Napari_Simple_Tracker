@@ -24,6 +24,7 @@ __pycache__/
 # Build artifacts
 build/
 dist/
+release_dist/
 
 # Local runtime/cache directories created during GUI tests
 Library/
