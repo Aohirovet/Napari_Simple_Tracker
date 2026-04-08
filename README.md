@@ -38,6 +38,10 @@ It is intentionally simple while still providing the core tools needed for routi
 
 ![Simple Tracker demo](https://raw.githubusercontent.com/Aohirovet/Napari_Simple_Tracker/main/Simple_Tracker.gif)
 
+### `Multiple_track`
+
+![Multiple track demo](https://raw.githubusercontent.com/Aohirovet/Napari_Simple_Tracker/main/Multiple_track.gif)
+
 ### `Simple_FRAP_analysis`
 
 ![FRAP Analysis demo](https://raw.githubusercontent.com/Aohirovet/Napari_Simple_Tracker/main/FRAP_Analysis.gif)
