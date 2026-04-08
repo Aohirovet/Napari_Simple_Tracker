@@ -1,6 +1,6 @@
 # Napari_Simple_Tracker
 
-[![PyPI version 1.1.6](https://img.shields.io/badge/PyPI-1.1.6-blue)](https://pypi.org/project/napari-simple-tracker/1.1.6/)
+[![PyPI version 1.1.7](https://img.shields.io/badge/PyPI-1.1.7-blue)](https://pypi.org/project/napari-simple-tracker/1.1.7/)
 [![Python 3.10-3.14](https://img.shields.io/badge/Python-3.10--3.14-green)](https://pypi.org/project/napari-simple-tracker/)
 [![napari hub](https://img.shields.io/badge/napari--hub-plugin-orange)](https://napari-hub.org/plugins/napari-simple-tracker.html)
 
@@ -114,9 +114,9 @@ Open image
 
 Detailed usage notes, supported image dimensions, output columns, session behavior, and common errors are documented here:
 
-- [Usage guide index](docs/USAGE.md)
-- [Simple Tracker guide](docs/USAGE_SIMPLE_TRACKER.md)
-- [FRAP Analysis guide](docs/USAGE_FRAP.md)
+- [Usage guide index](https://github.com/Aohirovet/Napari_Simple_Tracker/blob/main/docs/USAGE.md)
+- [Simple Tracker guide](https://github.com/Aohirovet/Napari_Simple_Tracker/blob/main/docs/USAGE_SIMPLE_TRACKER.md)
+- [FRAP Analysis guide](https://github.com/Aohirovet/Napari_Simple_Tracker/blob/main/docs/USAGE_FRAP.md)
 
 ## Release Note
 
