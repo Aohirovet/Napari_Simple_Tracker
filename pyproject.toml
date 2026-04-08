@@ -8,15 +8,15 @@ version = "0.1.0"
 description = "napari plugin for multi-track ROI FRAP analysis with double normalization"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
   { name = "Hirota Aoyagi" }
 ]
+keywords = ["napari", "roi", "tracker", "frap", "microscopy"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Framework :: napari",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -42,6 +42,7 @@ napari-roi-tracker = "napari_roi_tracker:napari.yaml"
 Homepage = "https://github.com/Aohirovet/Napari_Simple_Tracker"
 Repository = "https://github.com/Aohirovet/Napari_Simple_Tracker"
 Issues = "https://github.com/Aohirovet/Napari_Simple_Tracker/issues"
+Documentation = "https://github.com/Aohirovet/Napari_Simple_Tracker/blob/main/docs/USAGE.md"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -27,3 +27,6 @@ dist/
 
 # Local runtime/cache directories created during GUI tests
 Library/
+
+# Local-only release notes
+docs/RELEASE.md
