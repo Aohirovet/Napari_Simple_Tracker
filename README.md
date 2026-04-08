@@ -1,6 +1,6 @@
 # Napari_Simple_Tracker
 
-[![PyPI version 1.1.7](https://img.shields.io/badge/PyPI-1.1.7-blue)](https://pypi.org/project/napari-simple-tracker/1.1.7/)
+[![PyPI version 1.1.8](https://img.shields.io/badge/PyPI-1.1.8-blue)](https://pypi.org/project/napari-simple-tracker/1.1.8/)
 [![Python 3.10-3.14](https://img.shields.io/badge/Python-3.10--3.14-green)](https://pypi.org/project/napari-simple-tracker/)
 [![napari hub](https://img.shields.io/badge/napari--hub-plugin-orange)](https://napari-hub.org/plugins/napari-simple-tracker.html)
 
