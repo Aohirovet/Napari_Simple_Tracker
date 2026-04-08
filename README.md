@@ -1,8 +1,6 @@
 # Napari_Simple_Tracker
 
 [![PyPI version](https://img.shields.io/pypi/v/napari-simple-tracker)](https://pypi.org/project/napari-simple-tracker/)
-[![Python versions](https://img.shields.io/pypi/pyversions/napari-simple-tracker)](https://pypi.org/project/napari-simple-tracker/)
-[![Downloads](https://static.pepy.tech/badge/napari-simple-tracker)](https://pepy.tech/projects/napari-simple-tracker)
 
 `Napari_Simple_Tracker` is a lightweight and user-friendly napari plugin for ROI tracking and FRAP analysis in time-lapse image data.  
 It is designed to remain intentionally simple while providing the core functionality typically required for routine quantitative analysis.
