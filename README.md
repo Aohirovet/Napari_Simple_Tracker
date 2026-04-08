@@ -13,7 +13,7 @@ It is designed to remain intentionally simple while providing the core functiona
 
 ### `Simple_Tracker`
 
-- Multi-track ROI tracking
+- Multi ROI tracking
 - Linear interpolation across frames
 - Mean intensity measurement within circular ROIs
 - Plot generation
