@@ -36,6 +36,10 @@ It is designed to remain intentionally simple while providing the core functiona
 
 ![Simple Tracker demo](docs/demo/simple_tracker_demo.gif)
 
+### `Simple_FRAP_analysis`
+
+![Simple FRAP analysis demo](docs/demo/simple_frap_analysis_demo.gif)
+
 ## Installation
 
 This package is published on PyPI as `napari-simple-tracker`.
