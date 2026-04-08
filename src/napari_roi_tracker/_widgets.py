@@ -88,6 +88,18 @@ class RoiTrackerPlugin:
         self._connect_layer_name_events()
         self._refresh_widget_choices()
 
+    @staticmethod
+    def _set_points_border_color(layer: Any, color: Any) -> None:
+        try:
+            layer.border_color = color
+            return
+        except Exception:
+            pass
+        try:
+            layer.edge_color = color
+        except Exception:
+            pass
+
     def _connect_layer_events(self) -> None:
         for event_name in ("inserted", "removed", "reordered"):
             try:
@@ -137,10 +149,10 @@ class RoiTrackerPlugin:
             np.array([initial_point], dtype=float),
             name=name,
             size=1,
-            edge_width=0,
+            border_width=0,
             face_color=[0, 0, 0, 0],
-            edge_color=[0, 0, 0, 0],
-            features={"label": [f"ID {track_id}"]},
+            border_color=[0, 0, 0, 0],
+            features={"label": [f"Track {track_id}"]},
             text={
                 "string": "{label}",
                 "size": 12,
@@ -438,22 +450,13 @@ class RoiTrackerPlugin:
 
             for ts in track_sources:
                 layer_main = self.viewer.add_points(np.array(ts["points_data"] if mode == "simple_tracker" else ts["main_points_data"], dtype=float), name=ts["layer_name"], size=10, face_color="yellow")
-                try:
-                    layer_main.edge_color = "black"
-                except Exception:
-                    pass
+                self._set_points_border_color(layer_main, "black")
                 if mode == "frap_analysis":
                     layer_ref = self.viewer.add_points(np.array(ts["ref_points_data"], dtype=float), name=ts["ref_layer_name"], size=10, face_color="cyan")
-                    try:
-                        layer_ref.edge_color = "black"
-                    except Exception:
-                        pass
+                    self._set_points_border_color(layer_ref, "black")
             if bg_source is not None:
                 bg_layer = self.viewer.add_points(np.array(bg_source["points_data"], dtype=float), name=bg_source["layer_name"], size=10, face_color="magenta")
-                try:
-                    bg_layer.edge_color = "black"
-                except Exception:
-                    pass
+                self._set_points_border_color(bg_layer, "black")
 
             self._refresh_and_reconnect()
 

@@ -46,19 +46,19 @@ def validate_points_match_image_layer(
     role_label: str = "Points layer",
 ) -> None:
     if pts.ndim != 2:
-        raise ValueError(f"{role_label} '{layer_name}' のポイント形式が不正です。")
+        raise ValueError(f"{role_label} '{layer_name}' has an invalid points format.")
 
     if pts.shape[1] != image.ndim:
         raise ValueError(
-            f"{role_label} '{layer_name}' の次元数が、選択した Image layer と一致しません。"
-            f" Image layer は {image.ndim} 次元、ポイントは {pts.shape[1]} 次元です。"
-            " 別の layer 上に作成したポイントの可能性があります。"
+            f"{role_label} '{layer_name}' does not match the selected image layer dimensions."
+            f" The image layer is {image.ndim}D, but the points are {pts.shape[1]}D."
+            " These points may have been created on a different layer."
         )
 
     invalid_points: list[str] = []
     for idx, point in enumerate(pts):
         out_of_bounds_axes = [
-            f"axis{axis}={coord:.2f} (有効範囲: 0-{image.shape[axis] - 1})"
+            f"axis{axis}={coord:.2f} (valid range: 0-{image.shape[axis] - 1})"
             for axis, coord in enumerate(point)
             if coord < 0 or coord >= image.shape[axis]
         ]
@@ -67,17 +67,17 @@ def validate_points_match_image_layer(
 
     if invalid_points:
         raise ValueError(
-            f"{role_label} '{layer_name}' に、選択した Image layer の範囲外のポイントがあります。"
-            " 別の layer 上に作成したポイントの可能性があります。"
-            f" 該当ポイント: {', '.join(invalid_points)}"
+            f"{role_label} '{layer_name}' contains points outside the selected image layer bounds."
+            " These points may have been created on a different layer."
+            f" Affected points: {', '.join(invalid_points)}"
         )
 
 
 def validate_track_points(frames: np.ndarray, layer_name: str, role_label: str = "Points layer") -> None:
     if len(frames) < 2:
         raise ValueError(
-            f"{role_label} '{layer_name}' にはポイントが1点しかありません。"
-            " 少なくとも2点を、異なる時間フレームに指定してください。"
+            f"{role_label} '{layer_name}' contains only one point."
+            " Please place at least two points on different time frames."
         )
 
     unique_frames, counts = np.unique(frames, return_counts=True)
@@ -85,8 +85,8 @@ def validate_track_points(frames: np.ndarray, layer_name: str, role_label: str =
     if len(duplicated_frames) > 0:
         duplicated_str = ", ".join(str(int(frame)) for frame in duplicated_frames)
         raise ValueError(
-            f"{role_label} '{layer_name}' で同じ時間フレームに複数のポイントが指定されています"
-            f"（frame: {duplicated_str}）。各時間フレームには1点だけ指定してください。"
+            f"{role_label} '{layer_name}' contains multiple points on the same time frame"
+            f" (frame: {duplicated_str}). Please place only one point per time frame."
         )
 
 
@@ -109,9 +109,9 @@ def validate_points_within_image(
     ]
     if invalid_frame_points:
         raise ValueError(
-            f"{role_label} '{layer_name}' に、画像の時間範囲外のポイントがあります。"
-            f" 使用できる frame は 0 から {n_frames - 1} です。"
-            f" 該当ポイント: {', '.join(invalid_frame_points)}"
+            f"{role_label} '{layer_name}' contains points outside the image time range."
+            f" Valid frame values are 0 to {n_frames - 1}."
+            f" Affected points: {', '.join(invalid_frame_points)}"
         )
 
     invalid_xy_points = [
@@ -121,9 +121,9 @@ def validate_points_within_image(
     ]
     if invalid_xy_points:
         raise ValueError(
-            f"{role_label} '{layer_name}' に、Image layer の外側にあるポイントがあります。"
-            f" 使用できる座標範囲は y: 0 から {y_max - 1}、x: 0 から {x_max - 1} です。"
-            f" 該当ポイント: {', '.join(invalid_xy_points)}"
+            f"{role_label} '{layer_name}' contains points outside the image layer area."
+            f" Valid coordinate ranges are y: 0 to {y_max - 1}, x: 0 to {x_max - 1}."
+            f" Affected points: {', '.join(invalid_xy_points)}"
         )
 
 
