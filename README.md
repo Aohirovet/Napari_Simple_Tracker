@@ -1,11 +1,11 @@
 # Napari_Simple_Tracker
 
-[![PyPI version 1.1.5](https://img.shields.io/badge/PyPI-1.1.5-blue)](https://pypi.org/project/napari-simple-tracker/1.1.5/)
+[![PyPI version 1.1.6](https://img.shields.io/badge/PyPI-1.1.6-blue)](https://pypi.org/project/napari-simple-tracker/1.1.6/)
 [![Python 3.10-3.14](https://img.shields.io/badge/Python-3.10--3.14-green)](https://pypi.org/project/napari-simple-tracker/)
 [![napari hub](https://img.shields.io/badge/napari--hub-plugin-orange)](https://napari-hub.org/plugins/napari-simple-tracker.html)
 
-`Napari_Simple_Tracker` is a lightweight and user-friendly napari plugin for ROI tracking and FRAP analysis in time-lapse image data.  
-It is designed to remain intentionally simple while providing the core functionality typically required for routine quantitative analysis.
+`Napari_Simple_Tracker` is a lightweight, easy-to-use napari plugin for ROI tracking and FRAP analysis in time-lapse imaging data.  
+It is intentionally simple while still providing the core tools needed for routine quantitative analysis.
 
 - Simple: point-based interaction with minimal configuration
 - Practical: tracking, intensity plotting, CSV export, and session save/load are included
@@ -48,7 +48,7 @@ This package is published on PyPI as `napari-simple-tracker`.
 
 ### Install with pip
 
-Install the plugin into an environment where `napari` is already available:
+Install the plugin in an environment where `napari` is already installed:
 
 ```bash
 python -m pip install napari-simple-tracker
@@ -63,7 +63,7 @@ python -m pip install napari-simple-tracker
 
 ### Install from source
 
-If you want the latest local version from this repository:
+To install the latest local version from this repository:
 
 ```bash
 git clone https://github.com/Aohirovet/Napari_Simple_Tracker.git
@@ -71,11 +71,11 @@ cd Napari_Simple_Tracker
 python -m pip install .
 ```
 
-If you are using a dedicated environment for napari, activate that environment before running the install command.
+If you use a dedicated environment for napari, activate it before running the install command.
 
 ## Usage
 
-After installation, open napari and start either widget from:
+After installation, open napari and launch either widget from:
 
 `Plugins -> Napari Simple Tracker -> Simple_Tracker`
 
@@ -112,7 +112,7 @@ Open image
 
 ## Documentation
 
-More detailed usage notes, supported image dimensions, output columns, session behavior, and common errors are documented here:
+Detailed usage notes, supported image dimensions, output columns, session behavior, and common errors are documented here:
 
 - [Usage guide index](docs/USAGE.md)
 - [Simple Tracker guide](docs/USAGE_SIMPLE_TRACKER.md)
@@ -120,7 +120,7 @@ More detailed usage notes, supported image dimensions, output columns, session b
 
 ## Release Note
 
-When updating this plugin for a new public release, always increment the version in `pyproject.toml` before publishing to PyPI or expecting changes to appear on napari-hub.
+For every new public release, increment the version in `pyproject.toml` before publishing to PyPI or expecting changes to appear on napari-hub.
 
 ## License
 
