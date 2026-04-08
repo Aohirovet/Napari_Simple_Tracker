@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "napari-simple-tracker"
 version = "0.1.0"
-description = "napari plugin for multi-track ROI FRAP analysis with double normalization"
+description = "napari plugin for ROI tracking and FRAP analysis in time-lapse images"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT" 
