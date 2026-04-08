@@ -30,6 +30,16 @@ It is designed to remain intentionally simple while providing the core functiona
 - CSV export
 - Session save/load
 
+## Demo
+
+### `Simple_Tracker`
+
+![Simple Tracker demo](Simple_Tracker.gif)
+
+### `Simple_FRAP_analysis`
+
+![FRAP Analysis demo](FRAP_Analysis.gif)
+
 ## Installation
 
 This package is published on PyPI as `napari-simple-tracker`.
@@ -105,11 +115,6 @@ More detailed usage notes, supported image dimensions, output columns, session b
 - [Usage guide index](docs/USAGE.md)
 - [Simple Tracker guide](docs/USAGE_SIMPLE_TRACKER.md)
 - [FRAP Analysis guide](docs/USAGE_FRAP.md)
-
-## Demo
-
-- [Simple Tracker demo GIF](Simple_Tracker.gif)
-- [FRAP Analysis demo GIF](FRAP_Analysis.gif)
 
 ## License
 
