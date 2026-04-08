@@ -2,6 +2,10 @@
 
 This document describes how to use `Simple_FRAP_analysis` in `napari-roi-tracker`.
 
+## When to Use It
+
+Use `Simple_FRAP_analysis` when you want to analyze FRAP recovery in a main ROI, with optional correction based on a reference ROI and an optional background ROI.
+
 ## What It Does
 
 - Runs FRAP analysis with main, reference, and optional background ROIs
@@ -55,10 +59,6 @@ Rules:
 - One frame = at most one point
 - At least two annotated frames are required
 
-## When to Use It
-
-Use `Simple_FRAP_analysis` when you want to analyze FRAP recovery in a main ROI, with optional correction based on a reference ROI and an optional background ROI.
-
 ## Required Layers
 
 - Main ROI `Points` layers: one or more layers
@@ -97,7 +97,7 @@ Recommended naming:
 6. Set `Bleach start frame`.
 7. Click `Run FRAP Analysis`.
 
-## What Happens After Running
+## Run Results
 
 - Main ROIs are interpolated across frames.
 - Reference ROIs are interpolated if provided.
@@ -123,7 +123,9 @@ If no reference ROI is selected, `double_norm` falls back to normalization by th
 Frames before `Bleach start frame` are treated as pre-bleach, and frames from that index onward are treated as post-bleach.
 Both groups must exist or the analysis will fail.
 
-## Main Output Columns
+## CSV and Graph Outputs
+
+The exported CSV includes these columns, and raw, double-normalized, and full-scale-normalized graphs are available from the widget:
 
 - `track_id`
 - `track_name`

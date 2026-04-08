@@ -2,6 +2,10 @@
 
 This document describes how to use `Simple_Tracker` in `napari-roi-tracker`.
 
+## When to Use It
+
+Use `Simple_Tracker` when you want to follow the position of cells, particles, or other objects over time and measure the mean intensity inside a circular ROI centered on each tracked position.
+
 ## What It Does
 
 - Tracks multiple `Points` layers
@@ -53,10 +57,6 @@ Rules:
 - One frame = at most one point
 - At least two annotated frames are required
 
-## When to Use It
-
-Use `Simple_Tracker` when you want to follow the position of cells, particles, or other objects over time and measure the mean intensity inside a circular ROI centered on each tracked position.
-
 ## Preparation
 
 - Prepare one image layer for analysis.
@@ -80,7 +80,7 @@ Example layer names:
 3. Set `ROI radius (px)`.
 4. Click `Run Simple Tracker`.
 
-## What Happens After Running
+## Run Results
 
 - One track is created for each `Points` layer.
 - Missing frames are filled by linear interpolation.
@@ -88,7 +88,9 @@ Example layer names:
 - A raw intensity plot is shown.
 - The result table is stored in the current session.
 
-## Main Output Columns
+## CSV and Graph Outputs
+
+The exported CSV includes these columns, and a raw intensity graph is also available from the widget:
 
 - `track_id`
 - `track_name`

@@ -28,6 +28,30 @@ It is designed to remain intentionally simple while providing the core functiona
 - CSV export
 - Session save/load
 
+## Installation
+
+### Install from napari
+
+1. Launch napari.
+2. Open `Plugins -> Install/Uninstall Plugins...`.
+3. Search for `napari-roi-tracker` and install it.
+
+This plugin assumes that `napari` is already installed in the environment where you use it.
+
+If you use `Install by name/URL`, enter the package name `napari-roi-tracker`.
+
+### Install from a cloned repository
+
+If you already have a napari environment, you can install the plugin from a local clone:
+
+```bash
+git clone https://github.com/Aohirovet/Napari_Simple_Tracker.git
+cd Napari_Simple_Tracker
+python -m pip install .
+```
+
+If you are using a dedicated environment for napari, activate that environment before running `python -m pip install .`.
+
 ## Quick Start
 
 ```text
@@ -54,30 +78,6 @@ Open image
 4. Optionally create one `Points` layer for the background ROI.
 5. Open `Plugins -> Napari ROI Tracker -> Simple_FRAP_analysis`.
 6. Select the relevant layers and ROI radii, then press `Run FRAP Analysis`.
-
-## Installation
-
-### Install from napari
-
-1. Launch napari.
-2. Open `Plugins -> Install/Uninstall Plugins...`.
-3. Search for `napari-roi-tracker` and install it.
-
-This plugin assumes that `napari` is already installed in the environment where you use it.
-
-If you use `Install by name/URL`, enter the package name `napari-roi-tracker`.
-
-### Install from a cloned repository
-
-If you already have a napari environment, you can install the plugin from a local clone:
-
-```bash
-git clone https://github.com/Aohirovet/Napari_Simple_Tracker.git
-cd Napari_Simple_Tracker
-python -m pip install .
-```
-
-If you are using a dedicated environment for napari, activate that environment before running `python -m pip install .`.
 
 ## Documentation
 
