@@ -1,6 +1,6 @@
 # Simple Tracker Guide
 
-This document describes how to use `Simple_Tracker` in `Napari_Simple_Tracker`.
+This document describes how to use `Simple_Tracker` in `napari-simple-tracker`.
 
 ## When to Use It
 

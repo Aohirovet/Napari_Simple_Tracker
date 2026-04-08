@@ -1,6 +1,6 @@
 # FRAP Analysis Guide
 
-This document describes how to use `Simple_FRAP_analysis` in `Napari_Simple_Tracker`.
+This document describes how to use `Simple_FRAP_analysis` in `napari-simple-tracker`.
 
 ## When to Use It
 

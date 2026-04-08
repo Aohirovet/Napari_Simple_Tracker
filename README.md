@@ -1,6 +1,6 @@
-# Napari_Simple_Tracker
+# napari-simple-tracker
 
-`Napari_Simple_Tracker` is a lightweight and user-friendly napari plugin for ROI tracking and FRAP analysis in time-lapse image data.  
+`napari-simple-tracker` is a lightweight and user-friendly napari plugin for ROI tracking and FRAP analysis in time-lapse image data.  
 It is designed to remain intentionally simple while providing the core functionality typically required for routine quantitative analysis.
 
 - Simple: point-based interaction with minimal configuration
@@ -34,11 +34,11 @@ It is designed to remain intentionally simple while providing the core functiona
 
 1. Launch napari.
 2. Open `Plugins -> Install/Uninstall Plugins...`.
-3. Search for `Napari_Simple_Tracker` and install it.
+3. Search for `napari-simple-tracker` and install it.
 
 This plugin assumes that `napari` is already installed in the environment where you use it.
 
-If you use `Install by name/URL`, enter the package name `Napari_Simple_Tracker`.
+If you use `Install by name/URL`, enter the package name `napari-simple-tracker`.
 
 ### Install from a cloned repository
 

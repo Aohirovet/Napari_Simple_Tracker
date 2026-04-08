@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Napari_Simple_Tracker"
+name = "napari-simple-tracker"
 version = "0.1.0"
 description = "napari plugin for multi-track ROI FRAP analysis with double normalization"
 readme = "README.md"
@@ -36,7 +36,7 @@ dependencies = [
 
 
 [project.entry-points."napari.manifest"]
-Napari_Simple_Tracker = "Napari_Simple_Tracker:napari.yaml"
+napari-simple-tracker = "napari_simple_tracker:napari.yaml"
 
 [project.urls]
 Homepage = "https://github.com/Aohirovet/Napari_Simple_Tracker"
@@ -52,4 +52,4 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-Napari_Simple_Tracker = ["napari.yaml"]
+napari_simple_tracker = ["napari.yaml"]
