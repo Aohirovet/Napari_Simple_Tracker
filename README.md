@@ -59,8 +59,6 @@ Open image
 
 ### Install from napari
 
-After the package is published to PyPI, you can install it from napari:
-
 1. Launch napari.
 2. Open `Plugins -> Install/Uninstall Plugins...`.
 3. Search for `napari-roi-tracker` and install it.
@@ -80,19 +78,6 @@ python -m pip install .
 ```
 
 If you are using a dedicated environment for napari, activate that environment before running `python -m pip install .`.
-
-## Publishing
-
-To distribute this plugin as a napari plugin, publish the Python package to PyPI.
-
-```bash
-python -m pip install build twine
-python -m build
-python -m twine check dist/*
-python -m twine upload dist/*
-```
-
-Once the package is available on PyPI, napari Hub can discover it from the package metadata and the `napari.manifest` entry point already defined in `pyproject.toml`.
 
 ## Documentation
 
