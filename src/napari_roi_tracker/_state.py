@@ -15,6 +15,8 @@ class SessionState:
     bg_source: dict[str, Any] | None = None
     roi_tracks: list[tuple[Any, Any, Any, Any, int]] = field(default_factory=list)
     bg_track: tuple[Any, Any, Any, Any, int] | None = None
+    track_id_overlays: list[tuple[Any, Any, Any, Any, int]] = field(default_factory=list)
+    show_track_ids: bool = True
     mask_callback: Any | None = None
 
     def clear_results(self) -> None:
@@ -25,6 +27,7 @@ class SessionState:
         self.bg_source = None
         self.roi_tracks = []
         self.bg_track = None
+        self.track_id_overlays = []
 
 
 SESSION_STATE = SessionState()

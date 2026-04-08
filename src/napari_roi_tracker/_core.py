@@ -39,6 +39,94 @@ def extract_tyx_from_points(pts: np.ndarray, image_ndim: int) -> tuple[np.ndarra
     return frames[idx], ys[idx], xs[idx]
 
 
+def validate_points_match_image_layer(
+    pts: np.ndarray,
+    image: np.ndarray,
+    layer_name: str,
+    role_label: str = "Points layer",
+) -> None:
+    if pts.ndim != 2:
+        raise ValueError(f"{role_label} '{layer_name}' のポイント形式が不正です。")
+
+    if pts.shape[1] != image.ndim:
+        raise ValueError(
+            f"{role_label} '{layer_name}' の次元数が、選択した Image layer と一致しません。"
+            f" Image layer は {image.ndim} 次元、ポイントは {pts.shape[1]} 次元です。"
+            " 別の layer 上に作成したポイントの可能性があります。"
+        )
+
+    invalid_points: list[str] = []
+    for idx, point in enumerate(pts):
+        out_of_bounds_axes = [
+            f"axis{axis}={coord:.2f} (有効範囲: 0-{image.shape[axis] - 1})"
+            for axis, coord in enumerate(point)
+            if coord < 0 or coord >= image.shape[axis]
+        ]
+        if out_of_bounds_axes:
+            invalid_points.append(f"#{idx + 1}: " + ", ".join(out_of_bounds_axes))
+
+    if invalid_points:
+        raise ValueError(
+            f"{role_label} '{layer_name}' に、選択した Image layer の範囲外のポイントがあります。"
+            " 別の layer 上に作成したポイントの可能性があります。"
+            f" 該当ポイント: {', '.join(invalid_points)}"
+        )
+
+
+def validate_track_points(frames: np.ndarray, layer_name: str, role_label: str = "Points layer") -> None:
+    if len(frames) < 2:
+        raise ValueError(
+            f"{role_label} '{layer_name}' にはポイントが1点しかありません。"
+            " 少なくとも2点を、異なる時間フレームに指定してください。"
+        )
+
+    unique_frames, counts = np.unique(frames, return_counts=True)
+    duplicated_frames = unique_frames[counts > 1]
+    if len(duplicated_frames) > 0:
+        duplicated_str = ", ".join(str(int(frame)) for frame in duplicated_frames)
+        raise ValueError(
+            f"{role_label} '{layer_name}' で同じ時間フレームに複数のポイントが指定されています"
+            f"（frame: {duplicated_str}）。各時間フレームには1点だけ指定してください。"
+        )
+
+
+def validate_points_within_image(
+    frames: np.ndarray,
+    ys: np.ndarray,
+    xs: np.ndarray,
+    image: np.ndarray,
+    layer_name: str,
+    role_label: str = "Points layer",
+) -> None:
+    n_frames = int(image.shape[0])
+    frame0_shape = get_frame_2d_from_image(image, 0).shape
+    y_max, x_max = frame0_shape
+
+    invalid_frame_points = [
+        f"#{idx + 1}: frame={int(frame)}"
+        for idx, frame in enumerate(frames)
+        if frame < 0 or frame >= n_frames
+    ]
+    if invalid_frame_points:
+        raise ValueError(
+            f"{role_label} '{layer_name}' に、画像の時間範囲外のポイントがあります。"
+            f" 使用できる frame は 0 から {n_frames - 1} です。"
+            f" 該当ポイント: {', '.join(invalid_frame_points)}"
+        )
+
+    invalid_xy_points = [
+        f"#{idx + 1}: frame={int(frame)}, y={y:.2f}, x={x:.2f}"
+        for idx, (frame, y, x) in enumerate(zip(frames, ys, xs))
+        if y < 0 or y >= y_max or x < 0 or x >= x_max
+    ]
+    if invalid_xy_points:
+        raise ValueError(
+            f"{role_label} '{layer_name}' に、Image layer の外側にあるポイントがあります。"
+            f" 使用できる座標範囲は y: 0 から {y_max - 1}、x: 0 から {x_max - 1} です。"
+            f" 該当ポイント: {', '.join(invalid_xy_points)}"
+        )
+
+
 def interpolate_track(frames: np.ndarray, ys: np.ndarray, xs: np.ndarray) -> tuple[np.ndarray | None, np.ndarray | None, np.ndarray | None]:
     if len(frames) < 2:
         return None, None, None
@@ -102,7 +190,11 @@ def infer_reference_layer_name(main_layer_name: str, reference_prefix: str = "Re
 
 
 def _collect_points_layers(viewer: Any) -> list[Any]:
-    return [layer for layer in viewer.layers if isinstance(layer, Points)]
+    return [
+        layer
+        for layer in viewer.layers
+        if isinstance(layer, Points) and not str(layer.name).endswith("_track_id")
+    ]
 
 
 def _collect_image_layer_names(viewer: Any) -> list[str]:
@@ -119,6 +211,10 @@ def _build_mask_layer(viewer: Any, frame0: np.ndarray, name: str, color: str) ->
         opacity=0.6,
         visible=True,
     )
+
+
+def get_simple_tracker_mask_layer_name(points_layer_name: str) -> str:
+    return f"Track_{points_layer_name}"
 
 
 def run_simple_tracker_core(
@@ -148,9 +244,10 @@ def run_simple_tracker_core(
 
     for i, layer in enumerate(point_layers_main, start=1):
         pts = np.asarray(layer.data)
+        validate_points_match_image_layer(pts, image, layer.name)
         frames, ys, xs = extract_tyx_from_points(pts, image.ndim)
-        if len(frames) < 2:
-            raise ValueError(f"Points layer '{layer.name}' needs at least two points.")
+        validate_track_points(frames, layer.name)
+        validate_points_within_image(frames, ys, xs, image, layer.name)
         t_range, ys_interp, xs_interp = interpolate_track(frames, ys, xs)
         if t_range is None or ys_interp is None or xs_interp is None:
             raise ValueError(f"Interpolation failed for points layer '{layer.name}'.")
@@ -170,7 +267,7 @@ def run_simple_tracker_core(
         })
         result_dfs.append(df)
 
-        mask_layer = _build_mask_layer(viewer, frame0, f"TRACK_mask_{layer.name}", "cyan")
+        mask_layer = _build_mask_layer(viewer, frame0, get_simple_tracker_mask_layer_name(layer.name), "cyan")
         roi_tracks.append((mask_layer, t_range, ys_interp, xs_interp, roi_radius))
 
         track_sources.append({
@@ -229,9 +326,10 @@ def run_analysis_core(
             raise ValueError(f"Background points layer '{bg_layer_name}' was not found.")
         bg_layer = viewer.layers[bg_layer_name]
         bg_pts = np.asarray(bg_layer.data)
+        validate_points_match_image_layer(bg_pts, image, bg_layer.name, role_label="Background points layer")
         bg_frames, bg_ys, bg_xs = extract_tyx_from_points(bg_pts, image.ndim)
-        if len(bg_frames) < 2:
-            raise ValueError("Background points layer needs at least two points.")
+        validate_track_points(bg_frames, bg_layer.name, role_label="Background points layer")
+        validate_points_within_image(bg_frames, bg_ys, bg_xs, image, bg_layer.name, role_label="Background points layer")
         bg_t_range, bg_ys_interp, bg_xs_interp = interpolate_track(bg_frames, bg_ys, bg_xs)
         if bg_t_range is None or bg_ys_interp is None or bg_xs_interp is None:
             raise ValueError("Background interpolation failed.")
@@ -271,12 +369,14 @@ def run_analysis_core(
 
         main_pts = np.asarray(main_layer.data)
         ref_pts = np.asarray(ref_layer.data)
+        validate_points_match_image_layer(main_pts, image, main_layer.name, role_label="Main ROI")
+        validate_points_match_image_layer(ref_pts, image, ref_layer_name, role_label="Reference ROI")
         main_frames, main_ys, main_xs = extract_tyx_from_points(main_pts, image.ndim)
         ref_frames, ref_ys, ref_xs = extract_tyx_from_points(ref_pts, image.ndim)
-        if len(main_frames) < 2:
-            raise ValueError(f"Main ROI '{main_layer.name}' needs at least two points.")
-        if len(ref_frames) < 2:
-            raise ValueError(f"Reference ROI '{ref_layer_name}' needs at least two points.")
+        validate_track_points(main_frames, main_layer.name, role_label="Main ROI")
+        validate_track_points(ref_frames, ref_layer_name, role_label="Reference ROI")
+        validate_points_within_image(main_frames, main_ys, main_xs, image, main_layer.name, role_label="Main ROI")
+        validate_points_within_image(ref_frames, ref_ys, ref_xs, image, ref_layer_name, role_label="Reference ROI")
 
         main_t_range, main_ys_interp, main_xs_interp = interpolate_track(main_frames, main_ys, main_xs)
         ref_t_range, ref_ys_interp, ref_xs_interp = interpolate_track(ref_frames, ref_ys, ref_xs)

@@ -16,6 +16,7 @@ from skimage.draw import disk
 
 from ._core import (
     get_frame_2d_from_image,
+    get_simple_tracker_mask_layer_name,
     remove_layer_if_exists,
     run_analysis_core,
     run_simple_tracker_core,
@@ -32,12 +33,19 @@ class RoiTrackerPlugin:
 
         self._connect_layer_events()
         self._refresh_and_reconnect()
+        self._sync_track_id_toggle_widgets(SESSION_STATE.show_track_ids)
 
     def _get_image_layer_choices(self, widget: Any | None = None) -> list[str]:
         return [layer.name for layer in self.viewer.layers if isinstance(layer, Image)]
 
     def _get_points_layer_choices(self, widget: Any | None = None) -> list[str]:
-        return [""] + [layer.name for layer in self.viewer.layers if isinstance(layer, Points)]
+        return [
+            ""
+        ] + [
+            layer.name
+            for layer in self.viewer.layers
+            if isinstance(layer, Points) and not str(layer.name).endswith("_track_id")
+        ]
 
     def _refresh_widget_choices(self, event: Any | None = None) -> None:
         image_choices = self._get_image_layer_choices()
@@ -96,6 +104,132 @@ class RoiTrackerPlugin:
                 pass
         SESSION_STATE.mask_callback = None
 
+    @staticmethod
+    def _get_track_id_layer_name(base_layer_name: str) -> str:
+        return f"{base_layer_name}_track_id"
+
+    @staticmethod
+    def _make_track_display_point(frame: int, y: float, x: float, image_ndim: int) -> np.ndarray:
+        if image_ndim >= 5:
+            return np.array([frame, 0, 0, y, x], dtype=float)
+        if image_ndim == 4:
+            return np.array([frame, 0, y, x], dtype=float)
+        return np.array([frame, y, x], dtype=float)
+
+    @staticmethod
+    def _make_track_id_text_translation(image_ndim: int, radius: int) -> list[float]:
+        translation = [0.0] * image_ndim
+        translation[-1] = float(radius + 3)
+        return translation
+
+    def _remove_track_id_layers(self) -> None:
+        for overlay_layer, *_ in SESSION_STATE.track_id_overlays:
+            try:
+                remove_layer_if_exists(self.viewer, overlay_layer.name)
+            except Exception:
+                pass
+        SESSION_STATE.track_id_overlays = []
+
+    def _build_track_id_layer(self, name: str, track_id: int, image_ndim: int, radius: int) -> Any:
+        remove_layer_if_exists(self.viewer, name)
+        initial_point = self._make_track_display_point(0, 0.0, 0.0, image_ndim)
+        layer = self.viewer.add_points(
+            np.array([initial_point], dtype=float),
+            name=name,
+            size=1,
+            edge_width=0,
+            face_color=[0, 0, 0, 0],
+            edge_color=[0, 0, 0, 0],
+            features={"label": [f"ID {track_id}"]},
+            text={
+                "string": "{label}",
+                "size": 12,
+                "color": "white",
+                "anchor": "upper_left",
+                "translation": self._make_track_id_text_translation(image_ndim, radius),
+            },
+        )
+        layer.visible = False
+        return layer
+
+    def _rebuild_track_id_overlays(self, mode: str, track_sources: list[dict[str, Any]], meta: dict[str, Any]) -> list[tuple[Any, Any, Any, Any, int]]:
+        self._remove_track_id_layers()
+        overlays: list[tuple[Any, Any, Any, Any, int]] = []
+        if mode == "simple_tracker":
+            radius = int(meta.get("roi_radius", 5))
+            for ts in track_sources:
+                point_ndim = int(len(ts["points_data"][0])) if ts.get("points_data") else 3
+                overlay_layer = self._build_track_id_layer(
+                    name=self._get_track_id_layer_name(get_simple_tracker_mask_layer_name(ts["layer_name"])),
+                    track_id=int(ts["track_id"]),
+                    image_ndim=point_ndim,
+                    radius=radius,
+                )
+                overlays.append(
+                    (
+                        overlay_layer,
+                        np.array(ts["t_range"], dtype=int),
+                        np.array(ts["ys_interp"], dtype=float),
+                        np.array(ts["xs_interp"], dtype=float),
+                        point_ndim,
+                    )
+                )
+        elif mode == "frap_analysis":
+            radius = int(meta.get("main_radius", 5))
+            for ts in track_sources:
+                point_ndim = int(len(ts["main_points_data"][0])) if ts.get("main_points_data") else 3
+                overlay_layer = self._build_track_id_layer(
+                    name=self._get_track_id_layer_name(f"ROI_mask_{ts['layer_name']}"),
+                    track_id=int(ts["track_id"]),
+                    image_ndim=point_ndim,
+                    radius=radius,
+                )
+                overlays.append(
+                    (
+                        overlay_layer,
+                        np.array(ts["common_frames"], dtype=int),
+                        np.array(ts["common_main_y"], dtype=float),
+                        np.array(ts["common_main_x"], dtype=float),
+                        point_ndim,
+                    )
+                )
+        SESSION_STATE.track_id_overlays = overlays
+        self._refresh_track_id_layers()
+        return overlays
+
+    def _refresh_track_id_layers(self) -> None:
+        current_t = int(self.viewer.dims.current_step[0])
+        show_track_ids = bool(SESSION_STATE.show_track_ids)
+        for overlay_layer, t_range, ys, xs, point_ndim in SESSION_STATE.track_id_overlays:
+            t_range_np = np.asarray(t_range, dtype=int)
+            ys_np = np.asarray(ys, dtype=float)
+            xs_np = np.asarray(xs, dtype=float)
+            if show_track_ids and current_t in t_range_np:
+                idx = np.where(t_range_np == current_t)[0][0]
+                overlay_layer.data = np.array(
+                    [self._make_track_display_point(current_t, float(ys_np[idx]), float(xs_np[idx]), int(point_ndim))],
+                    dtype=float,
+                )
+                overlay_layer.visible = True
+            else:
+                overlay_layer.visible = False
+
+    def _sync_track_id_toggle_widgets(self, show_track_ids: bool) -> None:
+        for widget_name in ("_simple_track_id_toggle", "_frap_track_id_toggle"):
+            widget = getattr(self, widget_name, None)
+            if widget is None:
+                continue
+            try:
+                if bool(widget.show_track_ids.value) != bool(show_track_ids):
+                    widget.show_track_ids.value = bool(show_track_ids)
+            except Exception:
+                pass
+
+    def _set_track_id_visibility(self, show_track_ids: bool) -> None:
+        SESSION_STATE.show_track_ids = bool(show_track_ids)
+        self._sync_track_id_toggle_widgets(SESSION_STATE.show_track_ids)
+        self._refresh_track_id_layers()
+
     def _connect_mask_callback(
         self,
         roi_tracks: list[tuple[Any, Any, Any, Any, int]],
@@ -128,23 +262,77 @@ class RoiTrackerPlugin:
                     new_bg_mask[rr, cc] = 255
                 bg_mask_layer.data = new_bg_mask
 
+            self._refresh_track_id_layers()
+
         self.viewer.dims.events.current_step.connect(update_all_masks)
         SESSION_STATE.mask_callback = update_all_masks
         update_all_masks()
 
     @staticmethod
-    def _plot_result_df(df: pd.DataFrame, title_prefix: str, ycol: str) -> None:
+    def _format_plot_label(column_name: str) -> str:
+        return column_name.replace("_", " ").title()
+
+    @staticmethod
+    def _style_plot_axes(ax: Any, title: str, xlabel: str, ylabel: str, highlight_zero: bool = False) -> None:
+        ax.set_title(title, fontsize=14, fontweight="bold", pad=12)
+        ax.set_xlabel(xlabel, fontsize=11, fontweight="bold")
+        ax.set_ylabel(ylabel, fontsize=11, fontweight="bold")
+        ax.set_facecolor("#fbfbfd")
+        ax.grid(True, which="major", axis="both", linestyle="--", linewidth=0.8, alpha=0.35)
+        ax.grid(True, which="minor", axis="y", linestyle=":", linewidth=0.6, alpha=0.22)
+        ax.minorticks_on()
+        ax.tick_params(axis="both", labelsize=10)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color("#9aa4b2")
+        ax.spines["bottom"].set_color("#9aa4b2")
+        if highlight_zero:
+            ax.axhline(0, color="#6b7280", lw=1.2, ls=(0, (4, 4)), alpha=0.9, zorder=1)
+
+    @staticmethod
+    def _add_plot_legend(fig: Any, ax: Any, n_series: int) -> None:
+        if n_series == 0:
+            return
+        legend_cols = 1 if n_series <= 6 else 2
+        ax.legend(
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.18),
+            ncol=legend_cols,
+            frameon=False,
+            fontsize=9,
+            handlelength=2.4,
+            columnspacing=1.2,
+        )
+        fig.subplots_adjust(bottom=0.25 if legend_cols == 1 else 0.31)
+
+    def _plot_result_df(self, df: pd.DataFrame, title_prefix: str, ycol: str) -> None:
         if ycol not in df.columns:
             raise ValueError(f"Column '{ycol}' was not found in the result table.")
-        cmap = plt.get_cmap("tab10")
-        fig, ax = plt.subplots(figsize=(7, 4))
+        cmap = plt.get_cmap("tab20")
+        markers = ["o", "s", "^", "D", "v", "P", "X", "<", ">", "*"]
+        fig, ax = plt.subplots(figsize=(8.6, 5.2))
         for i, (tid, df_plot) in enumerate(df.groupby("track_id")):
-            ax.plot(df_plot["frame"], df_plot[ycol], color=cmap(i % 10), lw=2, label=f"Track {tid}")
-        ax.set_xlabel("Frame", fontsize=12, fontweight="bold")
-        ax.set_ylabel(ycol, fontsize=12, fontweight="bold")
-        ax.set_title(title_prefix, fontsize=14, fontweight="bold")
-        ax.grid(True, ls="--", alpha=0.5)
-        ax.legend(frameon=False)
+            color = cmap(i % 20)
+            ax.plot(
+                df_plot["frame"],
+                df_plot[ycol],
+                color=color,
+                lw=2.2,
+                marker=markers[i % len(markers)],
+                markersize=4.5,
+                markerfacecolor="white",
+                markeredgewidth=1.0,
+                label=f"Track {tid}",
+                zorder=3,
+            )
+        self._style_plot_axes(
+            ax=ax,
+            title=title_prefix,
+            xlabel="Frame",
+            ylabel=self._format_plot_label(ycol),
+        )
+        ax.margins(x=0.02, y=0.08)
+        self._add_plot_legend(fig, ax, df["track_id"].nunique())
         plt.tight_layout()
         plt.show()
 
@@ -165,6 +353,7 @@ class RoiTrackerPlugin:
         SESSION_STATE.bg_source = bg_source
         SESSION_STATE.roi_tracks = list(roi_tracks)
         SESSION_STATE.bg_track = bg_track
+        self._rebuild_track_id_overlays(mode=mode, track_sources=track_sources, meta=meta)
 
     def _save_result_csv(self) -> None:
         df = SESSION_STATE.result_df
@@ -190,6 +379,7 @@ class RoiTrackerPlugin:
             "meta": SESSION_STATE.meta,
             "track_sources": SESSION_STATE.track_sources,
             "bg_source": SESSION_STATE.bg_source,
+            "show_track_ids": SESSION_STATE.show_track_ids,
             "result_table": df.to_dict(orient="records"),
         }
         path, _ = QFileDialog.getSaveFileName(caption="Save session", filter="JSON files (*.json)")
@@ -212,6 +402,7 @@ class RoiTrackerPlugin:
             meta = payload.get("meta", {})
             track_sources = payload.get("track_sources", [])
             bg_source = payload.get("bg_source", None)
+            show_track_ids = bool(payload.get("show_track_ids", True))
             result_table = payload.get("result_table", [])
             if mode not in {"simple_tracker", "frap_analysis"}:
                 raise ValueError("Session mode is missing or invalid.")
@@ -233,10 +424,14 @@ class RoiTrackerPlugin:
             if bg_source is not None:
                 remove_layer_if_exists(self.viewer, bg_source["layer_name"])
                 remove_layer_if_exists(self.viewer, f"BG_mask_{bg_source['layer_name']}")
+            self._remove_track_id_layers()
             for ts in track_sources:
                 remove_layer_if_exists(self.viewer, ts["layer_name"])
+                remove_layer_if_exists(self.viewer, get_simple_tracker_mask_layer_name(ts["layer_name"]))
+                remove_layer_if_exists(self.viewer, self._get_track_id_layer_name(get_simple_tracker_mask_layer_name(ts["layer_name"])))
                 remove_layer_if_exists(self.viewer, f"TRACK_mask_{ts['layer_name']}")
                 remove_layer_if_exists(self.viewer, f"ROI_mask_{ts['layer_name']}")
+                remove_layer_if_exists(self.viewer, self._get_track_id_layer_name(f"ROI_mask_{ts['layer_name']}"))
                 if "ref_layer_name" in ts:
                     remove_layer_if_exists(self.viewer, ts["ref_layer_name"])
                     remove_layer_if_exists(self.viewer, f"REF_mask_{ts['ref_layer_name']}")
@@ -271,7 +466,14 @@ class RoiTrackerPlugin:
             if mode == "simple_tracker":
                 roi_radius = int(meta.get("roi_radius", 5))
                 for ts in track_sources:
-                    mask_layer = self.viewer.add_image(np.zeros_like(frame0, dtype=np.uint8), name=f"TRACK_mask_{ts['layer_name']}", blending="additive", colormap="cyan", opacity=0.6, visible=True)
+                    mask_layer = self.viewer.add_image(
+                        np.zeros_like(frame0, dtype=np.uint8),
+                        name=get_simple_tracker_mask_layer_name(ts["layer_name"]),
+                        blending="additive",
+                        colormap="cyan",
+                        opacity=0.6,
+                        visible=True,
+                    )
                     roi_tracks.append((mask_layer, np.array(ts["t_range"], dtype=int), np.array(ts["ys_interp"], dtype=float), np.array(ts["xs_interp"], dtype=float), roi_radius))
             else:
                 main_radius = int(meta.get("main_radius", 5))
@@ -290,6 +492,7 @@ class RoiTrackerPlugin:
             df = pd.DataFrame(result_table) if result_table else None
             if df is None or df.empty:
                 raise ValueError("Result table is missing in the session file.")
+            self._set_track_id_visibility(show_track_ids)
             self._store_session(mode=mode, df=df, meta=meta, track_sources=track_sources, bg_source=bg_source, roi_tracks=roi_tracks, bg_track=bg_track)
             plot_col = "raw_intensity" if mode == "simple_tracker" else "raw_main_intensity"
             self._plot_result_df(df, title_prefix=f"Restored {mode.replace('_', ' ').title()}", ycol=plot_col)
@@ -354,8 +557,16 @@ class RoiTrackerPlugin:
         def simple_load_session() -> None:
             self._restore_session()
 
+        @magicgui(auto_call=True, show_track_ids={"label": "Show Track IDs", "value": True})
+        def simple_track_id_toggle(show_track_ids: bool = True) -> None:
+            self._set_track_id_visibility(show_track_ids)
+
         self._simple_run = simple_run
-        return Container(widgets=[simple_run, simple_plot, simple_save_csv, simple_save_session, simple_load_session], labels=False)
+        self._simple_track_id_toggle = simple_track_id_toggle
+        return Container(
+            widgets=[simple_run, simple_track_id_toggle, simple_plot, simple_save_csv, simple_save_session, simple_load_session],
+            labels=False,
+        )
 
     def _build_frap_analysis_system(self):
         @magicgui(
@@ -440,20 +651,39 @@ class RoiTrackerPlugin:
                 QMessageBox.warning(None, "Error", f"Track ID {ref_track_id} does not exist.")
                 return
             ref_df = df[df["track_id"] == ref_track_id][["frame", "full_scale_norm"]].copy().rename(columns={"full_scale_norm": "ref_intensity"})
-            cmap = plt.get_cmap("tab10")
-            fig, ax = plt.subplots(figsize=(7, 4))
+            cmap = plt.get_cmap("tab20")
+            markers = ["o", "s", "^", "D", "v", "P", "X", "<", ">", "*"]
+            fig, ax = plt.subplots(figsize=(8.6, 5.2))
+            n_series = 0
             for i, (tid, dsub) in enumerate(df.groupby("track_id")):
                 if tid == ref_track_id:
                     continue
                 merged = pd.merge(dsub[["frame", "full_scale_norm"]], ref_df, on="frame", how="inner")
                 merged["delta"] = merged["full_scale_norm"] - merged["ref_intensity"]
-                ax.plot(merged["frame"], merged["delta"], color=cmap(i % 10), lw=2, label=f"Track {tid} - Track {ref_track_id}")
-            ax.axhline(0, color="gray", lw=1, ls="--")
-            ax.set_xlabel("Frame", fontsize=12, fontweight="bold")
-            ax.set_ylabel("Δ Full Scale", fontsize=12, fontweight="bold")
-            ax.set_title(f"Difference vs Track {ref_track_id}", fontsize=14, fontweight="bold")
-            ax.grid(True, ls="--", alpha=0.5)
-            ax.legend(frameon=False)
+                if merged.empty:
+                    continue
+                n_series += 1
+                ax.plot(
+                    merged["frame"],
+                    merged["delta"],
+                    color=cmap(i % 20),
+                    lw=2.2,
+                    marker=markers[i % len(markers)],
+                    markersize=4.5,
+                    markerfacecolor="white",
+                    markeredgewidth=1.0,
+                    label=f"Track {tid} - Track {ref_track_id}",
+                    zorder=3,
+                )
+            self._style_plot_axes(
+                ax=ax,
+                title=f"Difference vs Track {ref_track_id}",
+                xlabel="Frame",
+                ylabel="Delta Full Scale",
+                highlight_zero=True,
+            )
+            ax.margins(x=0.02, y=0.1)
+            self._add_plot_legend(fig, ax, n_series)
             plt.tight_layout()
             plt.show()
 
@@ -475,8 +705,13 @@ class RoiTrackerPlugin:
         def frap_load_session() -> None:
             self._restore_session()
 
+        @magicgui(auto_call=True, show_track_ids={"label": "Show Track IDs", "value": True})
+        def frap_track_id_toggle(show_track_ids: bool = True) -> None:
+            self._set_track_id_visibility(show_track_ids)
+
         self._frap_run = frap_run
+        self._frap_track_id_toggle = frap_track_id_toggle
         return Container(
-            widgets=[frap_run, frap_plot_raw, frap_plot_double, frap_plot_full, frap_difference, frap_save_csv, frap_save_session, frap_load_session],
+            widgets=[frap_run, frap_track_id_toggle, frap_plot_raw, frap_plot_double, frap_plot_full, frap_difference, frap_save_csv, frap_save_session, frap_load_session],
             labels=False,
         )
