@@ -72,6 +72,13 @@ class RoiTrackerPlugin:
         except Exception:
             pass
 
+        try:
+            current_ref = self._frap_run.reference_points_layer.value
+            self._frap_run.reference_points_layer.choices = points_choices
+            self._frap_run.reference_points_layer.value = current_ref if current_ref in points_choices else ""
+        except Exception:
+            pass
+
     def _connect_layer_name_events(self) -> None:
         for layer in self.viewer.layers:
             if isinstance(layer, (Image, Points)):
@@ -446,7 +453,7 @@ class RoiTrackerPlugin:
                 remove_layer_if_exists(self.viewer, self._get_track_id_layer_name(f"ROI_mask_{ts['layer_name']}"))
                 if "ref_layer_name" in ts:
                     remove_layer_if_exists(self.viewer, ts["ref_layer_name"])
-                    remove_layer_if_exists(self.viewer, f"REF_mask_{ts['ref_layer_name']}")
+                    remove_layer_if_exists(self.viewer, ts.get("ref_mask_name", f"REF_mask_{ts['ref_layer_name']}"))
 
             for ts in track_sources:
                 layer_main = self.viewer.add_points(np.array(ts["points_data"] if mode == "simple_tracker" else ts["main_points_data"], dtype=float), name=ts["layer_name"], size=10, face_color="yellow")
@@ -485,7 +492,14 @@ class RoiTrackerPlugin:
                 for ts in track_sources:
                     main_mask_layer = self.viewer.add_image(np.zeros_like(frame0, dtype=np.uint8), name=f"ROI_mask_{ts['layer_name']}", blending="additive", colormap="cyan", opacity=0.6, visible=True)
                     roi_tracks.append((main_mask_layer, np.array(ts["common_frames"], dtype=int), np.array(ts["common_main_y"], dtype=float), np.array(ts["common_main_x"], dtype=float), main_radius))
-                    ref_mask_layer = self.viewer.add_image(np.zeros_like(frame0, dtype=np.uint8), name=f"REF_mask_{ts['ref_layer_name']}", blending="additive", colormap="yellow", opacity=0.6, visible=True)
+                    ref_mask_layer = self.viewer.add_image(
+                        np.zeros_like(frame0, dtype=np.uint8),
+                        name=ts.get("ref_mask_name", f"REF_mask_{ts['ref_layer_name']}"),
+                        blending="additive",
+                        colormap="yellow",
+                        opacity=0.6,
+                        visible=True,
+                    )
                     roi_tracks.append((ref_mask_layer, np.array(ts["common_frames"], dtype=int), np.array(ts["common_ref_y"], dtype=float), np.array(ts["common_ref_x"], dtype=float), ref_radius))
                 if bg_source is not None:
                     bg_mask_layer = self.viewer.add_image(np.zeros_like(frame0, dtype=np.uint8), name=f"BG_mask_{bg_source['layer_name']}", blending="additive", colormap="magenta", opacity=0.6, visible=True)
@@ -579,7 +593,7 @@ class RoiTrackerPlugin:
             ref_radius={"label": "Reference ROI radius (px)", "min": 1, "max": 100, "step": 1, "value": 5},
             bg_radius={"label": "Background ROI radius (px)", "min": 1, "max": 100, "step": 1, "value": 5},
             bg_points_layer={"label": "Background points layer", "choices": self._get_points_layer_choices},
-            reference_prefix={"label": "Reference prefix", "value": "Ref_"},
+            reference_points_layer={"label": "Reference layer", "choices": self._get_points_layer_choices},
             bleach_frame={"label": "Bleach start frame", "min": 0, "step": 1, "value": 5},
         )
         def frap_run(
@@ -588,11 +602,14 @@ class RoiTrackerPlugin:
             ref_radius: int = 5,
             bg_radius: int = 5,
             bg_points_layer: str = "",
-            reference_prefix: str = "Ref_",
+            reference_points_layer: str = "",
             bleach_frame: int = 5,
         ) -> None:
             if not image_layer:
                 QMessageBox.warning(None, "Error", "Select an image layer.")
+                return
+            if not reference_points_layer:
+                QMessageBox.warning(None, "Error", "Select a reference layer.")
                 return
             try:
                 result, meta, track_sources, bg_source, roi_tracks, bg_track = run_analysis_core(
@@ -602,7 +619,7 @@ class RoiTrackerPlugin:
                     ref_radius=ref_radius,
                     bg_radius=bg_radius,
                     bg_points_layer_name=bg_points_layer,
-                    reference_prefix=reference_prefix,
+                    reference_points_layer_name=reference_points_layer,
                     bleach_frame=bleach_frame,
                 )
                 self._connect_mask_callback(roi_tracks, bg_track)
@@ -644,52 +661,6 @@ class RoiTrackerPlugin:
                 return
             self._plot_result_df(df, title_prefix="Full-Scale Normalization", ycol="full_scale_norm")
 
-        @magicgui(call_button="Difference Plot", ref_track_id={"label": "Reference track ID", "min": 1, "step": 1, "value": 1})
-        def frap_difference(ref_track_id: int = 1) -> None:
-            df = SESSION_STATE.result_df
-            if SESSION_STATE.mode != "frap_analysis" or df is None or df.empty:
-                QMessageBox.warning(None, "Error", "No FRAP result is available.")
-                return
-            if ref_track_id not in df["track_id"].unique():
-                QMessageBox.warning(None, "Error", f"Track ID {ref_track_id} does not exist.")
-                return
-            ref_df = df[df["track_id"] == ref_track_id][["frame", "full_scale_norm"]].copy().rename(columns={"full_scale_norm": "ref_intensity"})
-            cmap = plt.get_cmap("tab20")
-            markers = ["o", "s", "^", "D", "v", "P", "X", "<", ">", "*"]
-            fig, ax = plt.subplots(figsize=(8.6, 5.2))
-            n_series = 0
-            for i, (tid, dsub) in enumerate(df.groupby("track_id")):
-                if tid == ref_track_id:
-                    continue
-                merged = pd.merge(dsub[["frame", "full_scale_norm"]], ref_df, on="frame", how="inner")
-                merged["delta"] = merged["full_scale_norm"] - merged["ref_intensity"]
-                if merged.empty:
-                    continue
-                n_series += 1
-                ax.plot(
-                    merged["frame"],
-                    merged["delta"],
-                    color=cmap(i % 20),
-                    lw=2.2,
-                    marker=markers[i % len(markers)],
-                    markersize=4.5,
-                    markerfacecolor="white",
-                    markeredgewidth=1.0,
-                    label=f"Track {tid} - Track {ref_track_id}",
-                    zorder=3,
-                )
-            self._style_plot_axes(
-                ax=ax,
-                title=f"Difference vs Track {ref_track_id}",
-                xlabel="Frame",
-                ylabel="Delta Full Scale",
-                highlight_zero=True,
-            )
-            ax.margins(x=0.02, y=0.1)
-            self._add_plot_legend(fig, ax, n_series)
-            plt.tight_layout()
-            plt.show()
-
         @magicgui(call_button="Save Result CSV")
         def frap_save_csv() -> None:
             if SESSION_STATE.mode != "frap_analysis":
@@ -715,6 +686,6 @@ class RoiTrackerPlugin:
         self._frap_run = frap_run
         self._frap_track_id_toggle = frap_track_id_toggle
         return Container(
-            widgets=[frap_run, frap_track_id_toggle, frap_plot_raw, frap_plot_double, frap_plot_full, frap_difference, frap_save_csv, frap_save_session, frap_load_session],
+            widgets=[frap_run, frap_track_id_toggle, frap_plot_raw, frap_plot_double, frap_plot_full, frap_save_csv, frap_save_session, frap_load_session],
             labels=False,
         )

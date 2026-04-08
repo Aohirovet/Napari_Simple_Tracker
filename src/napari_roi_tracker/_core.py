@@ -184,11 +184,6 @@ def compute_double_and_full_scale(df_track: pd.DataFrame, bleach_frame: int) -> 
     df_track["double_norm_post0"] = post0_val
     return df_track
 
-
-def infer_reference_layer_name(main_layer_name: str, reference_prefix: str = "Ref_") -> str:
-    return f"{reference_prefix}{main_layer_name}"
-
-
 def _collect_points_layers(viewer: Any) -> list[Any]:
     return [
         layer
@@ -299,7 +294,7 @@ def run_analysis_core(
     ref_radius: int,
     bg_radius: int,
     bg_points_layer_name: str = "",
-    reference_prefix: str = "Ref_",
+    reference_points_layer_name: str = "",
     bleach_frame: int = 5,
 ) -> tuple[pd.DataFrame, dict[str, Any], list[dict[str, Any]], dict[str, Any] | None, list[tuple[Any, Any, Any, Any, int]], tuple[Any, Any, Any, Any, int] | None]:
     if image_layer_name not in _collect_image_layer_names(viewer):
@@ -308,11 +303,20 @@ def run_analysis_core(
     img_layer = viewer.layers[image_layer_name]
     image = np.asarray(img_layer.data)
     bg_layer_name = bg_points_layer_name.strip() if bg_points_layer_name else ""
+    ref_layer_name = reference_points_layer_name.strip() if reference_points_layer_name else ""
+
+    if not ref_layer_name:
+        raise ValueError("Reference points layer was not specified.")
+    if ref_layer_name not in [l.name for l in viewer.layers]:
+        raise ValueError(f"Reference points layer '{ref_layer_name}' was not found.")
+    if bg_layer_name and bg_layer_name == ref_layer_name:
+        raise ValueError("Reference points layer and background points layer must be different.")
 
     all_point_layers = _collect_points_layers(viewer)
-    point_layers_main = [l for l in all_point_layers if l.name != bg_layer_name and not l.name.startswith(reference_prefix)]
+    point_layers_main = [l for l in all_point_layers if l.name not in {bg_layer_name, ref_layer_name}]
     if not point_layers_main:
         raise ValueError("No main points layers were found for FRAP analysis.")
+    ref_layer = viewer.layers[ref_layer_name]
 
     all_dfs: list[pd.DataFrame] = []
     roi_tracks: list[tuple[Any, Any, Any, Any, int]] = []
@@ -362,11 +366,6 @@ def run_analysis_core(
 
     frame0 = get_frame_2d_from_image(image, 0)
     for i, main_layer in enumerate(point_layers_main, start=1):
-        ref_layer_name = infer_reference_layer_name(main_layer.name, reference_prefix=reference_prefix)
-        if ref_layer_name not in [l.name for l in viewer.layers]:
-            raise ValueError(f"Reference layer '{ref_layer_name}' for main ROI '{main_layer.name}' was not found.")
-        ref_layer = viewer.layers[ref_layer_name]
-
         main_pts = np.asarray(main_layer.data)
         ref_pts = np.asarray(ref_layer.data)
         validate_points_match_image_layer(main_pts, image, main_layer.name, role_label="Main ROI")
@@ -427,13 +426,15 @@ def run_analysis_core(
         main_mask_layer = _build_mask_layer(viewer, frame0, f"ROI_mask_{main_layer.name}", "cyan")
         roi_tracks.append((main_mask_layer, common_frames, np.array(main_y_common), np.array(main_x_common), main_radius))
 
-        ref_mask_layer = _build_mask_layer(viewer, frame0, f"REF_mask_{ref_layer.name}", "yellow")
+        ref_mask_name = f"REF_mask_{main_layer.name}__{ref_layer.name}"
+        ref_mask_layer = _build_mask_layer(viewer, frame0, ref_mask_name, "yellow")
         roi_tracks.append((ref_mask_layer, common_frames, np.array(ref_y_common), np.array(ref_x_common), ref_radius))
 
         track_sources.append({
             "track_id": i,
             "layer_name": main_layer.name,
             "ref_layer_name": ref_layer.name,
+            "ref_mask_name": ref_mask_name,
             "main_points_data": main_pts.tolist(),
             "ref_points_data": ref_pts.tolist(),
             "main_frames": main_frames.tolist(),
@@ -466,7 +467,7 @@ def run_analysis_core(
         "ref_radius": int(ref_radius),
         "bg_radius": int(bg_radius),
         "bg_points_layer": bg_layer_name,
-        "reference_prefix": reference_prefix,
+        "reference_points_layer": ref_layer_name,
         "bleach_frame": int(bleach_frame),
         "track_layers": [ts["layer_name"] for ts in track_sources],
         "ref_track_layers": [ts["ref_layer_name"] for ts in track_sources],
