@@ -118,7 +118,30 @@ The implementation computes FRAP values in this order:
 3. `double_norm` is calculated using the mean intensity of pre-bleach frames
 4. `full_scale_norm` is calculated using the first post-bleach `double_norm` value
 
-If no reference ROI is selected, `double_norm` falls back to normalization by the pre-bleach mean of the main ROI only.
+The formulas are:
+
+- With a reference ROI:
+  $$
+  \mathrm{double\_norm}
+  =
+  \frac{\mathrm{main\_bg\_corrected}}{\mathrm{main\_pre\_mean}}
+  \times
+  \frac{\mathrm{ref\_pre\_mean}}{\mathrm{ref\_bg\_corrected}}
+  $$
+- Without a reference ROI:
+  $$
+  \mathrm{double\_norm}
+  =
+  \frac{\mathrm{main\_bg\_corrected}}{\mathrm{main\_pre\_mean}}
+  $$
+- Full-scale normalization:
+  $$
+  \mathrm{full\_scale\_norm}
+  =
+  \frac{\mathrm{double\_norm} - \mathrm{double\_norm\_post0}}{1 - \mathrm{double\_norm\_post0}}
+  $$
+
+Here, `main_pre_mean` is the mean of `main_bg_corrected` over pre-bleach frames, `ref_pre_mean` is the mean of `ref_bg_corrected` over pre-bleach frames, and `double_norm_post0` is the first post-bleach value of `double_norm`.
 
 Frames before `Bleach start frame` are treated as pre-bleach, and frames from that index onward are treated as post-bleach.
 Both groups must exist or the analysis will fail.
