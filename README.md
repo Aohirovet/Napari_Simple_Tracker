@@ -30,7 +30,7 @@ It is designed to remain intentionally simple while providing the core functiona
 - CSV export
 - Session save/load
 
-## Demo
+## Examples
 
 ### `Simple_Tracker`
 
