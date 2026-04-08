@@ -30,19 +30,27 @@ It is designed to remain intentionally simple while providing the core functiona
 
 ## Installation
 
+This package is published on PyPI as `napari-simple-tracker`.
+
+### Install with pip
+
+Install the plugin into an environment where `napari` is already available:
+
+```bash
+python -m pip install napari-simple-tracker
+```
+
 ### Install from napari
 
 1. Launch napari.
 2. Open `Plugins -> Install/Uninstall Plugins...`.
 3. Search for `napari-simple-tracker` and install it.
 
-This plugin assumes that `napari` is already installed in the environment where you use it.
-
 If you use `Install by name/URL`, enter the package name `napari-simple-tracker`.
 
-### Install from a cloned repository
+### Install from source
 
-If you already have a napari environment, you can install the plugin from a local clone:
+If you want the latest local version from this repository:
 
 ```bash
 git clone https://github.com/Aohirovet/Napari_Simple_Tracker.git
@@ -50,7 +58,17 @@ cd Napari_Simple_Tracker
 python -m pip install .
 ```
 
-If you are using a dedicated environment for napari, activate that environment before running `python -m pip install .`.
+If you are using a dedicated environment for napari, activate that environment before running the install command.
+
+## Usage
+
+After installation, open napari and start either widget from:
+
+`Plugins -> Napari Simple Tracker -> Simple_Tracker`
+
+or
+
+`Plugins -> Napari Simple Tracker -> Simple_FRAP_analysis`
 
 ## Quick Start
 
@@ -62,7 +80,7 @@ Open image
   -> inspect masks, plots, and CSV output
 ```
 
-### Simple Tracker
+### `Simple_Tracker`
 
 1. Load a time-series image in napari.
 2. Create one `Points` layer for each object to be tracked.
@@ -70,7 +88,7 @@ Open image
 4. Open `Plugins -> Napari Simple Tracker -> Simple_Tracker`.
 5. Press `Run Simple Tracker`.
 
-### FRAP Analysis
+### `Simple_FRAP_analysis`
 
 1. Load a time-series image in napari.
 2. Create `Points` layers for the main ROI.
