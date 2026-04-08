@@ -455,12 +455,19 @@ class RoiTrackerPlugin:
                     remove_layer_if_exists(self.viewer, ts["ref_layer_name"])
                     remove_layer_if_exists(self.viewer, ts.get("ref_mask_name", f"REF_mask_{ts['ref_layer_name']}"))
 
+            restored_ref_layers: set[str] = set()
             for ts in track_sources:
                 layer_main = self.viewer.add_points(np.array(ts["points_data"] if mode == "simple_tracker" else ts["main_points_data"], dtype=float), name=ts["layer_name"], size=10, face_color="yellow")
                 self._set_points_border_color(layer_main, "black")
-                if mode == "frap_analysis":
+                if (
+                    mode == "frap_analysis"
+                    and ts.get("ref_layer_name", "")
+                    and ts["ref_layer_name"] not in restored_ref_layers
+                    and ts.get("ref_points_data")
+                ):
                     layer_ref = self.viewer.add_points(np.array(ts["ref_points_data"], dtype=float), name=ts["ref_layer_name"], size=10, face_color="cyan")
                     self._set_points_border_color(layer_ref, "black")
+                    restored_ref_layers.add(ts["ref_layer_name"])
             if bg_source is not None:
                 bg_layer = self.viewer.add_points(np.array(bg_source["points_data"], dtype=float), name=bg_source["layer_name"], size=10, face_color="magenta")
                 self._set_points_border_color(bg_layer, "black")
@@ -492,15 +499,16 @@ class RoiTrackerPlugin:
                 for ts in track_sources:
                     main_mask_layer = self.viewer.add_image(np.zeros_like(frame0, dtype=np.uint8), name=f"ROI_mask_{ts['layer_name']}", blending="additive", colormap="cyan", opacity=0.6, visible=True)
                     roi_tracks.append((main_mask_layer, np.array(ts["common_frames"], dtype=int), np.array(ts["common_main_y"], dtype=float), np.array(ts["common_main_x"], dtype=float), main_radius))
-                    ref_mask_layer = self.viewer.add_image(
-                        np.zeros_like(frame0, dtype=np.uint8),
-                        name=ts.get("ref_mask_name", f"REF_mask_{ts['ref_layer_name']}"),
-                        blending="additive",
-                        colormap="yellow",
-                        opacity=0.6,
-                        visible=True,
-                    )
-                    roi_tracks.append((ref_mask_layer, np.array(ts["common_frames"], dtype=int), np.array(ts["common_ref_y"], dtype=float), np.array(ts["common_ref_x"], dtype=float), ref_radius))
+                    if ts.get("ref_layer_name", ""):
+                        ref_mask_layer = self.viewer.add_image(
+                            np.zeros_like(frame0, dtype=np.uint8),
+                            name=ts.get("ref_mask_name", f"REF_mask_{ts['ref_layer_name']}"),
+                            blending="additive",
+                            colormap="yellow",
+                            opacity=0.6,
+                            visible=True,
+                        )
+                        roi_tracks.append((ref_mask_layer, np.array(ts["common_frames"], dtype=int), np.array(ts["common_ref_y"], dtype=float), np.array(ts["common_ref_x"], dtype=float), ref_radius))
                 if bg_source is not None:
                     bg_mask_layer = self.viewer.add_image(np.zeros_like(frame0, dtype=np.uint8), name=f"BG_mask_{bg_source['layer_name']}", blending="additive", colormap="magenta", opacity=0.6, visible=True)
                     bg_track = (bg_mask_layer, np.array(bg_source["t_range"], dtype=int), np.array(bg_source["ys_interp"], dtype=float), np.array(bg_source["xs_interp"], dtype=float), bg_radius)
@@ -607,9 +615,6 @@ class RoiTrackerPlugin:
         ) -> None:
             if not image_layer:
                 QMessageBox.warning(None, "Error", "Select an image layer.")
-                return
-            if not reference_points_layer:
-                QMessageBox.warning(None, "Error", "Select a reference layer.")
                 return
             try:
                 result, meta, track_sources, bg_source, roi_tracks, bg_track = run_analysis_core(

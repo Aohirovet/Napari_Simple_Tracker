@@ -39,8 +39,9 @@ dependencies = [
 napari-roi-tracker = "napari_roi_tracker:napari.yaml"
 
 [project.urls]
-Homepage = "https://github.com/your-username/napari-roi-tracker"
-Repository = "https://github.com/your-username/napari-roi-tracker"
+Homepage = "https://github.com/Aohirovet/Napari_Simple_Tracker"
+Repository = "https://github.com/Aohirovet/Napari_Simple_Tracker"
+Issues = "https://github.com/Aohirovet/Napari_Simple_Tracker/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -163,16 +163,22 @@ def compute_double_and_full_scale(df_track: pd.DataFrame, bleach_frame: int) -> 
         raise ValueError(f"track_id={track_id} has no post-bleach frames. Check bleach_frame.")
 
     roi1_pre = float(np.nanmean(df_track.loc[pre_mask, "main_bg_corrected"]))
-    roi2_pre = float(np.nanmean(df_track.loc[pre_mask, "ref_bg_corrected"]))
+    has_reference = "ref_bg_corrected" in df_track.columns and not df_track["ref_bg_corrected"].isna().all()
+    roi2_pre = float(np.nanmean(df_track.loc[pre_mask, "ref_bg_corrected"])) if has_reference else 1.0
 
     eps = 1e-12
     roi1_pre = roi1_pre if abs(roi1_pre) > eps else np.nan
     roi2_pre = roi2_pre if abs(roi2_pre) > eps else np.nan
 
-    df_track["double_norm"] = (
-        (df_track["main_bg_corrected"] / roi1_pre)
-        * (roi2_pre / df_track["ref_bg_corrected"].replace(0, np.nan))
-    )
+    if has_reference:
+        df_track["double_norm"] = (
+            (df_track["main_bg_corrected"] / roi1_pre)
+            * (roi2_pre / df_track["ref_bg_corrected"].replace(0, np.nan))
+        )
+    else:
+        # Without a reference ROI, assume no reference drift and normalize only by
+        # the pre-bleach mean of the main signal.
+        df_track["double_norm"] = df_track["main_bg_corrected"] / roi1_pre
 
     post0_idx = df_track.loc[post_mask, "frame"].idxmin()
     post0_val = float(df_track.loc[post0_idx, "double_norm"])
@@ -180,7 +186,7 @@ def compute_double_and_full_scale(df_track: pd.DataFrame, bleach_frame: int) -> 
     denom = 1.0 - post0_val
     df_track["full_scale_norm"] = np.nan if abs(denom) < eps else (df_track["double_norm"] - post0_val) / denom
     df_track["main_pre_mean"] = roi1_pre
-    df_track["ref_pre_mean"] = roi2_pre
+    df_track["ref_pre_mean"] = roi2_pre if has_reference else np.nan
     df_track["double_norm_post0"] = post0_val
     return df_track
 
@@ -305,9 +311,7 @@ def run_analysis_core(
     bg_layer_name = bg_points_layer_name.strip() if bg_points_layer_name else ""
     ref_layer_name = reference_points_layer_name.strip() if reference_points_layer_name else ""
 
-    if not ref_layer_name:
-        raise ValueError("Reference points layer was not specified.")
-    if ref_layer_name not in [l.name for l in viewer.layers]:
+    if ref_layer_name and ref_layer_name not in [l.name for l in viewer.layers]:
         raise ValueError(f"Reference points layer '{ref_layer_name}' was not found.")
     if bg_layer_name and bg_layer_name == ref_layer_name:
         raise ValueError("Reference points layer and background points layer must be different.")
@@ -316,7 +320,7 @@ def run_analysis_core(
     point_layers_main = [l for l in all_point_layers if l.name not in {bg_layer_name, ref_layer_name}]
     if not point_layers_main:
         raise ValueError("No main points layers were found for FRAP analysis.")
-    ref_layer = viewer.layers[ref_layer_name]
+    ref_layer = viewer.layers[ref_layer_name] if ref_layer_name else None
 
     all_dfs: list[pd.DataFrame] = []
     roi_tracks: list[tuple[Any, Any, Any, Any, int]] = []
@@ -367,25 +371,33 @@ def run_analysis_core(
     frame0 = get_frame_2d_from_image(image, 0)
     for i, main_layer in enumerate(point_layers_main, start=1):
         main_pts = np.asarray(main_layer.data)
-        ref_pts = np.asarray(ref_layer.data)
         validate_points_match_image_layer(main_pts, image, main_layer.name, role_label="Main ROI")
-        validate_points_match_image_layer(ref_pts, image, ref_layer_name, role_label="Reference ROI")
         main_frames, main_ys, main_xs = extract_tyx_from_points(main_pts, image.ndim)
-        ref_frames, ref_ys, ref_xs = extract_tyx_from_points(ref_pts, image.ndim)
         validate_track_points(main_frames, main_layer.name, role_label="Main ROI")
-        validate_track_points(ref_frames, ref_layer_name, role_label="Reference ROI")
         validate_points_within_image(main_frames, main_ys, main_xs, image, main_layer.name, role_label="Main ROI")
-        validate_points_within_image(ref_frames, ref_ys, ref_xs, image, ref_layer_name, role_label="Reference ROI")
 
         main_t_range, main_ys_interp, main_xs_interp = interpolate_track(main_frames, main_ys, main_xs)
-        ref_t_range, ref_ys_interp, ref_xs_interp = interpolate_track(ref_frames, ref_ys, ref_xs)
-        if any(v is None for v in (main_t_range, main_ys_interp, main_xs_interp, ref_t_range, ref_ys_interp, ref_xs_interp)):
-            raise ValueError(f"Interpolation failed for '{main_layer.name}' or '{ref_layer_name}'.")
-        common_frames = np.intersect1d(main_t_range, ref_t_range)
+        if any(v is None for v in (main_t_range, main_ys_interp, main_xs_interp)):
+            raise ValueError(f"Interpolation failed for '{main_layer.name}'.")
+        common_frames = np.array(main_t_range, copy=True)
+        ref_frames = ref_ys = ref_xs = None
+        ref_t_range = ref_ys_interp = ref_xs_interp = None
+        if ref_layer is not None:
+            ref_pts = np.asarray(ref_layer.data)
+            validate_points_match_image_layer(ref_pts, image, ref_layer_name, role_label="Reference ROI")
+            ref_frames, ref_ys, ref_xs = extract_tyx_from_points(ref_pts, image.ndim)
+            validate_track_points(ref_frames, ref_layer_name, role_label="Reference ROI")
+            validate_points_within_image(ref_frames, ref_ys, ref_xs, image, ref_layer_name, role_label="Reference ROI")
+            ref_t_range, ref_ys_interp, ref_xs_interp = interpolate_track(ref_frames, ref_ys, ref_xs)
+            if any(v is None for v in (ref_t_range, ref_ys_interp, ref_xs_interp)):
+                raise ValueError(f"Interpolation failed for '{main_layer.name}' or '{ref_layer_name}'.")
+            common_frames = np.intersect1d(common_frames, ref_t_range)
         if bg_df is not None:
             common_frames = np.intersect1d(common_frames, bg_df["frame"].to_numpy())
         if len(common_frames) == 0:
-            raise ValueError(f"No common frames between '{main_layer.name}' and '{ref_layer_name}'.")
+            if ref_layer is not None:
+                raise ValueError(f"No common frames between '{main_layer.name}' and '{ref_layer_name}'.")
+            raise ValueError(f"No valid frames were found for '{main_layer.name}'.")
 
         main_raw, main_y_common, main_x_common = [], [], []
         for tt in common_frames:
@@ -397,18 +409,23 @@ def run_analysis_core(
             main_x_common.append(float(x))
 
         ref_raw, ref_y_common, ref_x_common = [], [], []
-        for tt in common_frames:
-            idx = np.where(ref_t_range == tt)[0][0]
-            y, x = ref_ys_interp[idx], ref_xs_interp[idx]
-            frame2d = get_frame_2d_from_image(image, int(tt))
-            ref_raw.append(measure_roi_mean(frame2d, float(y), float(x), ref_radius))
-            ref_y_common.append(float(y))
-            ref_x_common.append(float(x))
+        if ref_layer is not None and ref_t_range is not None and ref_ys_interp is not None and ref_xs_interp is not None:
+            for tt in common_frames:
+                idx = np.where(ref_t_range == tt)[0][0]
+                y, x = ref_ys_interp[idx], ref_xs_interp[idx]
+                frame2d = get_frame_2d_from_image(image, int(tt))
+                ref_raw.append(measure_roi_mean(frame2d, float(y), float(x), ref_radius))
+                ref_y_common.append(float(y))
+                ref_x_common.append(float(x))
+        else:
+            ref_raw = [np.nan] * len(common_frames)
+            ref_y_common = [np.nan] * len(common_frames)
+            ref_x_common = [np.nan] * len(common_frames)
 
         df = pd.DataFrame({
             "track_id": i,
             "track_name": main_layer.name,
-            "ref_track_name": ref_layer_name,
+            "ref_track_name": ref_layer_name if ref_layer is not None else "",
             "frame": common_frames,
             "main_y": main_y_common,
             "main_x": main_x_common,
@@ -419,36 +436,42 @@ def run_analysis_core(
         })
         df = pd.merge(df, bg_df[["frame", "bg_intensity"]], on="frame", how="left") if bg_df is not None else df.assign(bg_intensity=np.nan)
         df["main_bg_corrected"] = df["raw_main_intensity"] - df["bg_intensity"].fillna(0)
-        df["ref_bg_corrected"] = df["raw_ref_intensity"] - df["bg_intensity"].fillna(0)
+        df["ref_bg_corrected"] = (
+            df["raw_ref_intensity"] - df["bg_intensity"].fillna(0)
+            if ref_layer is not None
+            else np.nan
+        )
         df = compute_double_and_full_scale(df, bleach_frame=bleach_frame)
         all_dfs.append(df)
 
         main_mask_layer = _build_mask_layer(viewer, frame0, f"ROI_mask_{main_layer.name}", "cyan")
         roi_tracks.append((main_mask_layer, common_frames, np.array(main_y_common), np.array(main_x_common), main_radius))
 
-        ref_mask_name = f"REF_mask_{main_layer.name}__{ref_layer.name}"
-        ref_mask_layer = _build_mask_layer(viewer, frame0, ref_mask_name, "yellow")
-        roi_tracks.append((ref_mask_layer, common_frames, np.array(ref_y_common), np.array(ref_x_common), ref_radius))
+        ref_mask_name = ""
+        if ref_layer is not None:
+            ref_mask_name = f"REF_mask_{main_layer.name}__{ref_layer.name}"
+            ref_mask_layer = _build_mask_layer(viewer, frame0, ref_mask_name, "yellow")
+            roi_tracks.append((ref_mask_layer, common_frames, np.array(ref_y_common), np.array(ref_x_common), ref_radius))
 
         track_sources.append({
             "track_id": i,
             "layer_name": main_layer.name,
-            "ref_layer_name": ref_layer.name,
+            "ref_layer_name": ref_layer.name if ref_layer is not None else "",
             "ref_mask_name": ref_mask_name,
             "main_points_data": main_pts.tolist(),
-            "ref_points_data": ref_pts.tolist(),
+            "ref_points_data": ref_pts.tolist() if ref_layer is not None else [],
             "main_frames": main_frames.tolist(),
             "main_ys": main_ys.tolist(),
             "main_xs": main_xs.tolist(),
-            "ref_frames": ref_frames.tolist(),
-            "ref_ys": ref_ys.tolist(),
-            "ref_xs": ref_xs.tolist(),
+            "ref_frames": ref_frames.tolist() if ref_frames is not None else [],
+            "ref_ys": ref_ys.tolist() if ref_ys is not None else [],
+            "ref_xs": ref_xs.tolist() if ref_xs is not None else [],
             "main_t_range": main_t_range.tolist(),
             "main_ys_interp": main_ys_interp.tolist(),
             "main_xs_interp": main_xs_interp.tolist(),
-            "ref_t_range": ref_t_range.tolist(),
-            "ref_ys_interp": ref_ys_interp.tolist(),
-            "ref_xs_interp": ref_xs_interp.tolist(),
+            "ref_t_range": ref_t_range.tolist() if ref_t_range is not None else [],
+            "ref_ys_interp": ref_ys_interp.tolist() if ref_ys_interp is not None else [],
+            "ref_xs_interp": ref_xs_interp.tolist() if ref_xs_interp is not None else [],
             "common_frames": common_frames.tolist(),
             "common_main_y": np.array(main_y_common).tolist(),
             "common_main_x": np.array(main_x_common).tolist(),
@@ -468,9 +491,10 @@ def run_analysis_core(
         "bg_radius": int(bg_radius),
         "bg_points_layer": bg_layer_name,
         "reference_points_layer": ref_layer_name,
+        "reference_enabled": bool(ref_layer_name),
         "bleach_frame": int(bleach_frame),
         "track_layers": [ts["layer_name"] for ts in track_sources],
-        "ref_track_layers": [ts["ref_layer_name"] for ts in track_sources],
+        "ref_track_layers": [ts["ref_layer_name"] for ts in track_sources if ts["ref_layer_name"]],
     }
     return result, meta, track_sources, bg_source, roi_tracks, bg_track
 

@@ -1,113 +1,107 @@
 # napari-roi-tracker
 
-napari 上で動く ROI tracking / FRAP analysis plugin です。現在は `npe2` plugin として、`Simple_Tracker` と `Simple_FRAP_analysis` の 2 entrypoint を提供しています。
+`napari-roi-tracker` is a lightweight and user-friendly napari plugin for ROI tracking and FRAP analysis in time-lapse image data.  
+It is designed to remain intentionally simple while providing the core functionality typically required for routine quantitative analysis.
 
-## Plugin Entrypoints
+- Simple: point-based interaction with minimal configuration
+- Practical: tracking, intensity plotting, CSV export, and session save/load are included
+- Readable: ROI masks and track IDs are displayed directly in the napari viewer
 
-- `Simple_Tracker`
-  - ROI tracking
-  - fluorescence intensity graph
-  - CSV export
-  - session 保存
-  - session 読込
-- `Simple_FRAP_analysis`
-  - main ROI / reference ROI / background ROI を使った FRAP 解析
-  - background correction
-  - double normalization
-  - full scale normalization
-  - CSV export
-  - session 保存
-  - session 読込
+## Capabilities
 
-## 主な機能
+### `Simple_Tracker`
 
-- 複数トラック対応
-- main ROI / reference ROI / background ROI の分離
-- ROI 補間
-- Simple tracking
-- 背景補正
-- double normalization
-- full scale normalization
-- CSV 保存
-- session 保存 / 読込
-- napari 上での ROI mask 追従表示
+- Multi-track ROI tracking
+- Linear interpolation across frames
+- Mean intensity measurement within circular ROIs
+- Plot generation
+- CSV export
+- Session save/load
 
-## レイヤー命名ルール
+### `Simple_FRAP_analysis`
 
-- main ROI: 任意の Points layer 名
-- reference ROI: `Ref_` + main ROI layer 名
-- background ROI: GUI 上で明示選択
+- FRAP analysis using a main ROI, with optional reference and background ROIs
+- Background correction
+- Double normalization
+- Full-scale normalization
+- Plot generation
+- CSV export
+- Session save/load
 
-例:
-- `Cell1`
-- `Ref_Cell1`
-- `BG`
-
-## インストール
-
-開発用:
-
-```bash
-cd napari-roi-tracker
-pip install -e .
-```
-
-通常:
-
-```bash
-pip install .
-```
-
-## napari での起動
-
-```bash
-napari
-```
-
-Plugins メニューから `Napari ROI Tracker` を開き、以下の widget を使います。
-
-- `Simple_Tracker`
-- `Simple_FRAP_analysis`
-
-`Save Session` と `Load Session` は `Simple_Tracker` と `Simple_FRAP_analysis` の各 widget 内にあります。
-
-## 開発の進め方
-
-```bash
-git init
-git add .
-git commit -m "Initial napari plugin scaffold"
-```
-
-GitHub に作った空リポジトリへ接続:
-
-```bash
-git branch -M main
-git remote add origin https://github.com/<your-name>/napari-roi-tracker.git
-git push -u origin main
-```
-
-## ディレクトリ構成
+## Quick Start
 
 ```text
-napari-roi-tracker/
-├── pyproject.toml
-├── README.md
-├── LICENSE
-└── src/
-    └── napari_roi_tracker/
-        ├── __init__.py
-        ├── _core.py
-        ├── _dock.py
-        ├── _state.py
-        ├── _widgets.py
-        └── napari.yaml
+Open image
+  -> place Points
+  -> open plugin
+  -> run analysis
+  -> inspect masks, plots, and CSV output
 ```
 
-## 次に入れるとよい改善
+### Simple Tracker
 
-- bleach frame 自動検出
-- polygon ROI 対応
-- fitting curve の追加
-- test 導入
-- icon / sample data / CI
+1. Load a time-series image in napari.
+2. Create one `Points` layer for each object to be tracked.
+3. Mark the object center across multiple frames.
+4. Open `Plugins -> Napari ROI Tracker -> Simple_Tracker`.
+5. Press `Run Simple Tracker`.
+
+### FRAP Analysis
+
+1. Load a time-series image in napari.
+2. Create `Points` layers for the main ROI.
+3. Create one `Points` layer for the reference ROI.
+4. Optionally create one `Points` layer for the background ROI.
+5. Open `Plugins -> Napari ROI Tracker -> Simple_FRAP_analysis`.
+6. Select the relevant layers and ROI radii, then press `Run FRAP Analysis`.
+
+## Installation
+
+### Install from napari
+
+After the package is published to PyPI, you can install it from napari:
+
+1. Launch napari.
+2. Open `Plugins -> Install/Uninstall Plugins...`.
+3. Search for `napari-roi-tracker` and install it.
+
+This plugin assumes that `napari` is already installed in the environment where you use it.
+
+If you use `Install by name/URL`, enter the package name `napari-roi-tracker`.
+
+### Install from a cloned repository
+
+If you already have a napari environment, you can install the plugin from a local clone:
+
+```bash
+git clone https://github.com/Aohirovet/Napari_Simple_Tracker.git
+cd Napari_Simple_Tracker
+python -m pip install .
+```
+
+If you are using a dedicated environment for napari, activate that environment before running `python -m pip install .`.
+
+## Publishing
+
+To distribute this plugin as a napari plugin, publish the Python package to PyPI.
+
+```bash
+python -m pip install build twine
+python -m build
+python -m twine check dist/*
+python -m twine upload dist/*
+```
+
+Once the package is available on PyPI, napari Hub can discover it from the package metadata and the `napari.manifest` entry point already defined in `pyproject.toml`.
+
+## Documentation
+
+More detailed usage notes, supported image dimensions, output columns, session behavior, and common errors are documented here:
+
+- [Usage guide index](docs/USAGE.md)
+- [Simple Tracker guide](docs/USAGE_SIMPLE_TRACKER.md)
+- [FRAP Analysis guide](docs/USAGE_FRAP.md)
+
+## License
+
+MIT License
