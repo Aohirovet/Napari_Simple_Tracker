@@ -106,6 +106,11 @@ More detailed usage notes, supported image dimensions, output columns, session b
 - [Simple Tracker guide](docs/USAGE_SIMPLE_TRACKER.md)
 - [FRAP Analysis guide](docs/USAGE_FRAP.md)
 
+## Demo
+
+- [Simple Tracker demo GIF](Simple_Tracker.gif)
+- [FRAP Analysis demo GIF](FRAP_Analysis.gif)
+
 ## License
 
 MIT License
